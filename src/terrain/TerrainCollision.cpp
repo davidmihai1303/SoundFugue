@@ -36,13 +36,20 @@ TerrainCollision::TerrainCollision(std::vector<sf::FloatRect> solids)
 
 TerrainCollision::~TerrainCollision() = default;
 
-TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const sf::Vector2f displacement) {
+TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const sf::Vector2f displacement) const {
     validateRectangle(startBounds, "body");
     if (!std::isfinite(displacement.x)) {
         throw std::invalid_argument("displacement: x must be finite");
     }
     if (!std::isfinite(displacement.y)) {
         throw std::invalid_argument("displacement: y must be finite");
+    }
+
+    for (std::size_t index = 0; index < m_solids.size(); ++index) {
+        // Edge contact has no intersection area and is a valid starting position.
+        if (startBounds.findIntersection(m_solids[index])) {
+            throw std::invalid_argument("body's starting position is overlapping terrain solid " + std::to_string(index));
+        }
     }
 
     startBounds.position += displacement;

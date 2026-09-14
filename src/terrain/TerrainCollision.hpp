@@ -11,7 +11,7 @@ public:
     explicit TerrainCollision(std::vector<sf::FloatRect> solids);
     ~TerrainCollision();
 
-    static TerrainMove resolveMovement(sf::FloatRect startBounds, sf::Vector2f displacement);
+    TerrainMove resolveMovement(sf::FloatRect startBounds, sf::Vector2f displacement) const;
     [[nodiscard]] const std::vector<sf::FloatRect>& getSolids() const;
 
 private:
