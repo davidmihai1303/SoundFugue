@@ -89,9 +89,10 @@ bool expectInvalidMovement(const char* scenario, const TerrainCollision& terrain
     return false;
 }
 
-int main() {
+// Checks full and zero displacement in empty terrain, including the absence of contacts.
+int testEmptyTerrainMovement() {
     int failures = 0;
-    // Empty terrain isolates basic movement and input validation from collision handling.
+    // Empty terrain isolates basic movement from collision handling.
     const TerrainCollision emptyTerrain({});
     // World-pixel rectangle: top-left (10, 20), width 16, height 32.
     const sf::FloatRect startBounds{{10.f, 20.f}, {16.f, 32.f}};
@@ -112,6 +113,15 @@ int main() {
     if (!expectNoContacts("empty terrain: zero displacement", stationary.contacts)) {
         ++failures;
     }
+
+    return failures;
+}
+
+// Checks valid negative positions and rejects invalid terrain, body, and displacement values.
+int testGeometryValidation() {
+    int failures = 0;
+    const TerrainCollision emptyTerrain({});
+    const sf::FloatRect startBounds{{10.f, 20.f}, {16.f, 32.f}};
 
     // Negative world coordinates are valid for terrain and should be stored unchanged.
     const sf::FloatRect negativeSolid{{-20.f, -10.f}, {16.f, 32.f}};
@@ -170,6 +180,13 @@ int main() {
         ++failures;
     }
 
+    return failures;
+}
+
+// Rejects initial penetration, even when moving out, while allowing exact edge contact.
+int testStartingOverlap() {
+    int failures = 0;
+
     // This wall covers x=10..20 and y=0..10. Positive shared area at the start is invalid.
     const sf::FloatRect wall{{10.f, 0.f}, {10.f, 10.f}};
     const TerrainCollision wallTerrain({wall});
@@ -204,6 +221,15 @@ int main() {
     if (!expectValidStationaryMovement("touching wall's bottom edge", wallTerrain, {{12.f, 10.f}, {6.f, 5.f}})) {
         ++failures;
     }
+
+    return failures;
+}
+
+int main() {
+    int failures = 0;
+    failures += testEmptyTerrainMovement();
+    failures += testGeometryValidation();
+    failures += testStartingOverlap();
 
     // CTest uses the process exit code: zero passes, any nonzero value fails.
     return failures == 0 ? 0 : 1;
