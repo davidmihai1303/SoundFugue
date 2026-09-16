@@ -24,15 +24,17 @@ bool expectBounds(const char* scenario, const sf::FloatRect& actual, const sf::F
     return false;
 }
 
-bool expectNoContacts(const char* scenario, const TerrainContacts& contacts) {
-    // Empty terrain should not report a floor, ceiling, or wall impact.
-    if (!contacts.floor && !contacts.ceiling && !contacts.leftWall && !contacts.rightWall) {
+bool expectContacts(const char* scenario, const TerrainContacts& actual, const TerrainContacts& expected) {
+    if (actual.floor == expected.floor && actual.ceiling == expected.ceiling &&
+        actual.leftWall == expected.leftWall && actual.rightWall == expected.rightWall) {
         return true;
     }
 
-    std::cerr << "FAIL: " << scenario << " should have no contacts\n"
-              << "  actual floor=" << contacts.floor << ", ceiling=" << contacts.ceiling
-              << ", leftWall=" << contacts.leftWall << ", rightWall=" << contacts.rightWall << '\n';
+    std::cerr << "FAIL: " << scenario << " reported the wrong contacts\n"
+              << "  expected floor=" << expected.floor << ", ceiling=" << expected.ceiling
+              << ", leftWall=" << expected.leftWall << ", rightWall=" << expected.rightWall << '\n'
+              << "  actual floor=" << actual.floor << ", ceiling=" << actual.ceiling
+              << ", leftWall=" << actual.leftWall << ", rightWall=" << actual.rightWall << '\n';
     return false;
 }
 
@@ -102,7 +104,7 @@ int testEmptyTerrainMovement() {
     if (!expectBounds("empty terrain: full displacement", moved.bounds, {{15.f, 17.f}, {16.f, 32.f}})) {
         ++failures;
     }
-    if (!expectNoContacts("empty terrain: full displacement", moved.contacts)) {
+    if (!expectContacts("empty terrain: full displacement", moved.contacts, {})) {
         ++failures;
     }
 
@@ -110,7 +112,7 @@ int testEmptyTerrainMovement() {
     if (!expectBounds("empty terrain: zero displacement", stationary.bounds, startBounds)) {
         ++failures;
     }
-    if (!expectNoContacts("empty terrain: zero displacement", stationary.contacts)) {
+    if (!expectContacts("empty terrain: zero displacement", stationary.contacts, {})) {
         ++failures;
     }
 
@@ -141,7 +143,7 @@ int testGeometryValidation() {
         if (!expectBounds("negative body position", negativeMove.bounds, {{-15.f, -13.f}, {16.f, 32.f}})) {
             ++failures;
         }
-        if (!expectNoContacts("negative body position", negativeMove.contacts)) {
+        if (!expectContacts("negative body position", negativeMove.contacts, {})) {
             ++failures;
         }
     } catch (const std::exception& error) {
@@ -228,7 +230,40 @@ int testStartingOverlap() {
     if (!expectBounds("move away from touching wall", movingAway.bounds, {{-5.f, 2.f}, {10.f, 6.f}})) {
         ++failures;
     }
-    if (!expectNoContacts("move away from touching wall", movingAway.contacts)) {
+    if (!expectContacts("move away from touching wall", movingAway.contacts, {})) {
+        ++failures;
+    }
+
+    return failures;
+}
+
+// Distinguishes touching a corner for one instant from moving into a corner.
+int testDiagonalCornerPaths() {
+    int failures = 0;
+
+    const sf::FloatRect solid{{10.f, 10.f}, {10.f, 10.f}};
+    const TerrainCollision terrain({solid});
+
+    // At time 0.5, the body's bottom-right corner touches the solid's top-left
+    // corner. It then continues above the solid, so this point graze is not a collision.
+    const sf::FloatRect grazingBody{{0.f, 15.f}, {5.f, 5.f}};
+    const TerrainMove graze = terrain.resolveMovement(grazingBody, {10.f, -20.f});
+    if (!expectBounds("diagonal point graze", graze.bounds, {{10.f, -5.f}, {5.f, 5.f}})) {
+        ++failures;
+    }
+    if (!expectContacts("diagonal point graze", graze.contacts, {})) {
+        ++failures;
+    }
+
+    // Both axes enter the solid at time 0.5. The body must stop where its
+    // bottom-right corner meets the solid and report both impacted body sides.
+    const sf::FloatRect approachingBody{{0.f, 0.f}, {5.f, 5.f}};
+    const TerrainMove cornerImpact = terrain.resolveMovement(approachingBody, {10.f, 10.f});
+    if (!expectBounds("genuine diagonal corner collision", cornerImpact.bounds, {{5.f, 5.f}, {5.f, 5.f}})) {
+        ++failures;
+    }
+    const TerrainContacts expectedCornerContacts{.floor = true, .rightWall = true};
+    if (!expectContacts("genuine diagonal corner collision", cornerImpact.contacts, expectedCornerContacts)) {
         ++failures;
     }
 
@@ -240,6 +275,7 @@ int main() {
     failures += testEmptyTerrainMovement();
     failures += testGeometryValidation();
     failures += testStartingOverlap();
+    failures += testDiagonalCornerPaths();
 
     // CTest uses the process exit code: zero passes, any nonzero value fails.
     return failures == 0 ? 0 : 1;
