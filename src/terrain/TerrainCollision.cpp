@@ -83,6 +83,10 @@ TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const s
         }
     }
 
+    bool impactFound = false;
+    float earliestImpactTime = 1.f;
+    TerrainContacts earliestImpactContacts{};
+
     for (const sf::FloatRect& solid : m_solids) {
         const std::optional<AxisInterval> xInterval = calculateAxisInterval(
             startBounds.position.x, startBounds.position.x + startBounds.size.x,
@@ -123,12 +127,18 @@ TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const s
             }
         }
 
-        // The next step will use the candidate time and contacts to stop the body at impact.
+        // Keep the first impact along this movement request.
+        if (!impactFound || enterTime < earliestImpactTime) {
+            impactFound = true;
+            earliestImpactTime = enterTime;
+            earliestImpactContacts = impactContacts;
+        }
     }
 
-    // Collision stopping is added in the following sweep steps; empty terrain uses the full displacement.
-    startBounds.position += displacement;
-    return {startBounds, {}};
+    // No impact leaves the time at 1, so the complete displacement is applied.
+    startBounds.position.x += displacement.x * earliestImpactTime;
+    startBounds.position.y += displacement.y * earliestImpactTime;
+    return {startBounds, earliestImpactContacts};
 }
 
 const std::vector<sf::FloatRect>& TerrainCollision::getSolids() const {

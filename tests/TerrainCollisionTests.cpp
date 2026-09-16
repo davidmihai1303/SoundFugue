@@ -270,12 +270,81 @@ int testDiagonalCornerPaths() {
     return failures;
 }
 
+// Checks that approaching each face stops at the surface and reports the body side that hit it.
+int testApproachingEverySide() {
+    int failures = 0;
+
+    const sf::FloatRect solid{{10.f, 10.f}, {10.f, 10.f}};
+    const TerrainCollision terrain({solid});
+
+    const TerrainMove fromLeft = terrain.resolveMovement({{0.f, 12.f}, {5.f, 5.f}}, {10.f, 0.f});
+    if (!expectBounds("approach from left", fromLeft.bounds, {{5.f, 12.f}, {5.f, 5.f}})) {
+        ++failures;
+    }
+    if (!expectContacts("approach from left", fromLeft.contacts, {.rightWall = true})) {
+        ++failures;
+    }
+
+    const TerrainMove fromRight = terrain.resolveMovement({{25.f, 12.f}, {5.f, 5.f}}, {-10.f, 0.f});
+    if (!expectBounds("approach from right", fromRight.bounds, {{20.f, 12.f}, {5.f, 5.f}})) {
+        ++failures;
+    }
+    if (!expectContacts("approach from right", fromRight.contacts, {.leftWall = true})) {
+        ++failures;
+    }
+
+    const TerrainMove fromAbove = terrain.resolveMovement({{12.f, 0.f}, {5.f, 5.f}}, {0.f, 10.f});
+    if (!expectBounds("approach from above", fromAbove.bounds, {{12.f, 5.f}, {5.f, 5.f}})) {
+        ++failures;
+    }
+    if (!expectContacts("approach from above", fromAbove.contacts, {.floor = true})) {
+        ++failures;
+    }
+
+    const TerrainMove fromBelow = terrain.resolveMovement({{12.f, 25.f}, {5.f, 5.f}}, {0.f, -10.f});
+    if (!expectBounds("approach from below", fromBelow.bounds, {{12.f, 20.f}, {5.f, 5.f}})) {
+        ++failures;
+    }
+    if (!expectContacts("approach from below", fromBelow.contacts, {.ceiling = true})) {
+        ++failures;
+    }
+
+    return failures;
+}
+
+// Checks the complete swept path so large movement cannot tunnel through thin terrain.
+int testCrossingThinTerrain() {
+    int failures = 0;
+
+    const TerrainCollision thinWallTerrain({{{10.f, 0.f}, {1.f, 10.f}}});
+    const TerrainMove wallImpact = thinWallTerrain.resolveMovement({{0.f, 2.f}, {5.f, 5.f}}, {20.f, 0.f});
+    if (!expectBounds("cross thin wall", wallImpact.bounds, {{5.f, 2.f}, {5.f, 5.f}})) {
+        ++failures;
+    }
+    if (!expectContacts("cross thin wall", wallImpact.contacts, {.rightWall = true})) {
+        ++failures;
+    }
+
+    const TerrainCollision thinFloorTerrain({{{0.f, 10.f}, {10.f, 1.f}}});
+    const TerrainMove floorImpact = thinFloorTerrain.resolveMovement({{2.f, 0.f}, {5.f, 5.f}}, {0.f, 20.f});
+    if (!expectBounds("cross thin floor", floorImpact.bounds, {{2.f, 5.f}, {5.f, 5.f}})) {
+        ++failures;
+    }
+    if (!expectContacts("cross thin floor", floorImpact.contacts, {.floor = true})) {
+        ++failures;
+    }
+
+    return failures;
+}
+
 int main() {
     int failures = 0;
     failures += testEmptyTerrainMovement();
     failures += testGeometryValidation();
     failures += testStartingOverlap();
     failures += testDiagonalCornerPaths();
+    failures += testApproachingEverySide();
+    failures += testCrossingThinTerrain();
 
     // CTest uses the process exit code: zero passes, any nonzero value fails.
     return failures == 0 ? 0 : 1;
