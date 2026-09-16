@@ -1,5 +1,6 @@
 #include "terrain/TerrainCollision.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <limits>
@@ -91,12 +92,38 @@ TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const s
             startBounds.position.y, startBounds.position.y + startBounds.size.y,
             solid.position.y, solid.position.y + solid.size.y, displacement.y);
 
-        // A swept collision is impossible if either axis has no overlap interval.
+        // Both axes need to have an overlap interval for a collision to be possible. (Required but not enough - the 2 intervals need a valid intersection interval)
         if (!xInterval || !yInterval) {
             continue;
         }
 
-        // The next step will combine these intervals to find the collision time and impacted side.
+        // Two-dimensional overlap begins when the later axis enters and ends when the earlier axis leaves.
+        const float enterTime = std::max(xInterval->enterTime, yInterval->enterTime);
+        const float leaveTime = std::min(xInterval->leaveTime, yInterval->leaveTime);
+
+        // Ignore point grazes and overlap intervals that begin outside this movement request.
+        if (enterTime >= leaveTime || enterTime < 0.f || enterTime > 1.f) {
+            continue;
+        }
+
+        // The axis that enters last identifies the impacted side. Equal entry times impact a corner.
+        TerrainContacts impactContacts{};
+        if (xInterval->enterTime >= yInterval->enterTime) {
+            if (displacement.x > 0.f) {
+                impactContacts.rightWall = true;
+            } else if (displacement.x < 0.f) {
+                impactContacts.leftWall = true;
+            }
+        }
+        if (yInterval->enterTime >= xInterval->enterTime) {
+            if (displacement.y > 0.f) {
+                impactContacts.floor = true;
+            } else if (displacement.y < 0.f) {
+                impactContacts.ceiling = true;
+            }
+        }
+
+        // The next step will use the candidate time and contacts to stop the body at impact.
     }
 
     // Collision stopping is added in the following sweep steps; empty terrain uses the full displacement.
