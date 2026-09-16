@@ -209,7 +209,8 @@ int testStartingOverlap() {
     }
 
     // Equal edges have no shared area. Test that contact on every side is accepted.
-    if (!expectValidStationaryMovement("touching wall's left edge", wallTerrain, {{0.f, 2.f}, {10.f, 6.f}})) {
+    const sf::FloatRect bodyTouchingLeftEdge{{0.f, 2.f}, {10.f, 6.f}};
+    if (!expectValidStationaryMovement("touching wall's left edge", wallTerrain, bodyTouchingLeftEdge)) {
         ++failures;
     }
     if (!expectValidStationaryMovement("touching wall's right edge", wallTerrain, {{20.f, 2.f}, {10.f, 6.f}})) {
@@ -219,6 +220,15 @@ int testStartingOverlap() {
         ++failures;
     }
     if (!expectValidStationaryMovement("touching wall's bottom edge", wallTerrain, {{12.f, 10.f}, {6.f, 5.f}})) {
+        ++failures;
+    }
+
+    // Contact must not hold the body against a surface when it requests movement away from it.
+    const TerrainMove movingAway = wallTerrain.resolveMovement(bodyTouchingLeftEdge, {-5.f, 0.f});
+    if (!expectBounds("move away from touching wall", movingAway.bounds, {{-5.f, 2.f}, {10.f, 6.f}})) {
+        ++failures;
+    }
+    if (!expectNoContacts("move away from touching wall", movingAway.contacts)) {
         ++failures;
     }
 
