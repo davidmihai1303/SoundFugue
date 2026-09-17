@@ -414,7 +414,7 @@ int testCrossingThinTerrain()
 int testEarliestCollision()
 {
     int failures = 0;
-    constexpr sf::FloatRect nearWall ={{10.f,0.f},{10.f,20.f}};
+    constexpr sf::FloatRect nearWall = {{10.f, 0.f}, {10.f, 20.f}};
     constexpr sf::FloatRect farWall = {{30.f, 0.f}, {10.f, 20.f}};
     std::vector twoWalls = {nearWall, farWall};
     const TerrainCollision twoWallsTerrain(twoWalls);
@@ -444,6 +444,26 @@ int testEarliestCollision()
     return failures;
 }
 
+int testMultipleCollisions()
+{
+    int failures = 0;
+    constexpr sf::FloatRect floor = {{0.f, 20.f}, {20.f, 10.f}};
+    constexpr sf::FloatRect rightWall = {{10.f, 0.f}, {10.f, 20.f}};
+    const TerrainCollision terrain({floor, rightWall});
+    TerrainMove impact = terrain.resolveMovement({{0.f, 0.f}, {5.f, 5.f}}, {8.f, 30.f});
+
+    if (!expectBounds("two collisions in one request", impact.bounds, {{5.f, 15.f}, {5.f, 5.f}}))
+    {
+        ++failures;
+    }
+    if (!expectContacts("two collisions in one request", impact.contacts, {.floor = true, .rightWall = true}))
+    {
+        ++failures;
+    }
+
+    return failures;
+}
+
 int main()
 {
     int failures = 0;
@@ -454,7 +474,7 @@ int main()
     failures += testApproachingEverySide();
     failures += testCrossingThinTerrain();
     failures += testEarliestCollision();
-
+    failures += testMultipleCollisions();
     // CTest uses the process exit code: zero passes, any nonzero value fails.
     return failures == 0 ? 0 : 1;
 }

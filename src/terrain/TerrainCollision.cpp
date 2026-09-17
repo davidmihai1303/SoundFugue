@@ -103,88 +103,90 @@ TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const s
         }
     }
 
-    bool impactFound = false;
-    float earliestImpactTime = 1.f;
-    TerrainContacts earliestImpactContacts{};
+    sf::Vector2f remainingDisplacement = displacement;
+    TerrainContacts contacts{};
 
-    for (const sf::FloatRect& solid : m_solids)
+    constexpr int maxSweepIterations = 4;
+    for (int iteration = 0; iteration < maxSweepIterations; ++iteration)
     {
-        const std::optional<AxisInterval> xInterval = calculateAxisInterval(
-            startBounds.position.x, startBounds.position.x + startBounds.size.x,
-            solid.position.x, solid.position.x + solid.size.x, displacement.x);
+        if (remainingDisplacement.x == 0.f && remainingDisplacement.y == 0.f)
+            break;
 
-        const std::optional<AxisInterval> yInterval = calculateAxisInterval(
-            startBounds.position.y, startBounds.position.y + startBounds.size.y,
-            solid.position.y, solid.position.y + solid.size.y, displacement.y);
+        const sf::Vector2f sweepDisplacement = remainingDisplacement;
+        bool impactFound = false;
+        float earliestImpactTime = 1.f;
+        TerrainContacts earliestImpactContacts{};
 
-        // Both axes need to have an overlap interval for a collision to be possible. (Required but not enough - the 2 intervals need a valid intersection interval)
-        if (!xInterval || !yInterval)
+        for (const sf::FloatRect& solid : m_solids)
         {
-            continue;
-        }
+            const std::optional<AxisInterval> xInterval = calculateAxisInterval(
+                startBounds.position.x, startBounds.position.x + startBounds.size.x,
+                solid.position.x, solid.position.x + solid.size.x, sweepDisplacement.x);
 
-        // Two-dimensional overlap begins when the later axis enters and ends when the earlier axis leaves.
-        const float enterTime = std::max(xInterval->enterTime, yInterval->enterTime);
-        const float leaveTime = std::min(xInterval->leaveTime, yInterval->leaveTime);
+            const std::optional<AxisInterval> yInterval = calculateAxisInterval(
+                startBounds.position.y, startBounds.position.y + startBounds.size.y,
+                solid.position.y, solid.position.y + solid.size.y, sweepDisplacement.y);
 
-        // Ignore point grazes and overlap intervals that begin outside this movement request.
-        if (enterTime >= leaveTime || enterTime < 0.f || enterTime > 1.f)
-        {
-            continue;
-        }
+            // Both axes need to have an overlap interval for a collision to be possible. (Required but not enough - the 2 intervals need a valid intersection interval)
+            if (!xInterval || !yInterval)
+                continue;
 
-        // The axis that enters last identifies the impacted side. Equal entry times impact a corner.
-        TerrainContacts impactContacts{};
-        if (xInterval->enterTime >= yInterval->enterTime)
-        {
-            if (displacement.x > 0.f)
+            // Two-dimensional overlap begins when the later axis enters and ends when the earlier axis leaves.
+            const float enterTime = std::max(xInterval->enterTime, yInterval->enterTime);
+            const float leaveTime = std::min(xInterval->leaveTime, yInterval->leaveTime);
+
+            // Ignore point grazes and overlap intervals that begin outside this movement request.
+            if (enterTime >= leaveTime || enterTime < 0.f || enterTime > 1.f)
+                continue;
+
+            // The axis that enters last identifies the impacted side. Equal entry times impact a corner.
+            TerrainContacts impactContacts{};
+            if (xInterval->enterTime >= yInterval->enterTime)
             {
-                impactContacts.rightWall = true;
+                if (sweepDisplacement.x > 0.f)
+                    impactContacts.rightWall = true;
+                else if (sweepDisplacement.x < 0.f)
+                    impactContacts.leftWall = true;
             }
-            else if (displacement.x < 0.f)
+            if (yInterval->enterTime >= xInterval->enterTime)
             {
-                impactContacts.leftWall = true;
+                if (sweepDisplacement.y > 0.f)
+                    impactContacts.floor = true;
+                else if (sweepDisplacement.y < 0.f)
+                    impactContacts.ceiling = true;
             }
-        }
-        if (yInterval->enterTime >= xInterval->enterTime)
-        {
-            if (displacement.y > 0.f)
+
+            // Keep the first impact along this movement request.
+            if (!impactFound || enterTime < earliestImpactTime)
             {
-                impactContacts.floor = true;
-            }
-            else if (displacement.y < 0.f)
-            {
-                impactContacts.ceiling = true;
+                impactFound = true;
+                earliestImpactTime = enterTime;
+                earliestImpactContacts = impactContacts;
             }
         }
 
-        // Keep the first impact along this movement request.
-        if (!impactFound || enterTime < earliestImpactTime)
-        {
-            impactFound = true;
-            earliestImpactTime = enterTime;
-            earliestImpactContacts = impactContacts;
-        }
+        // Move to the impact and keep the unused part of the request for sliding.
+        startBounds.position.x += sweepDisplacement.x * earliestImpactTime;
+        startBounds.position.y += sweepDisplacement.y * earliestImpactTime;
+        remainingDisplacement = {
+            sweepDisplacement.x * (1.f - earliestImpactTime),
+            sweepDisplacement.y * (1.f - earliestImpactTime)
+        };
+
+        // Separate checks let a corner block both remaining components.
+        if (earliestImpactContacts.floor || earliestImpactContacts.ceiling)
+            remainingDisplacement.y = 0.f;
+        if (earliestImpactContacts.leftWall || earliestImpactContacts.rightWall)
+            remainingDisplacement.x = 0.f;
+
+        // Preserve both collisions
+        contacts.floor = contacts.floor || earliestImpactContacts.floor;
+        contacts.ceiling = contacts.ceiling || earliestImpactContacts.ceiling;
+        contacts.leftWall = contacts.leftWall || earliestImpactContacts.leftWall;
+        contacts.rightWall = contacts.rightWall || earliestImpactContacts.rightWall;
     }
 
-    // Move to the impact and keep the unused part of the request for sliding.
-    startBounds.position.x += displacement.x * earliestImpactTime;
-    startBounds.position.y += displacement.y * earliestImpactTime;
-    sf::Vector2f remainingDisplacement{
-        displacement.x * (1.f - earliestImpactTime), displacement.y * (1.f - earliestImpactTime)
-    };
-
-    // Separate checks let a corner block both remaining components.
-    if (earliestImpactContacts.floor || earliestImpactContacts.ceiling)
-    {
-        remainingDisplacement.y = 0.f;
-    }
-    if (earliestImpactContacts.leftWall || earliestImpactContacts.rightWall)
-    {
-        remainingDisplacement.x = 0.f;
-    }
-    startBounds.position += remainingDisplacement;
-    return {startBounds, earliestImpactContacts};
+    return {startBounds, contacts};
 }
 
 const std::vector<sf::FloatRect>& TerrainCollision::getSolids() const
