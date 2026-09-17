@@ -156,12 +156,19 @@ TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const s
                     impactContacts.ceiling = true;
             }
 
-            // Keep the first impact along this movement request.
+            // Keep the earliest impact and merge contacts that happen at the same time.
             if (!impactFound || enterTime < earliestImpactTime)
             {
                 impactFound = true;
                 earliestImpactTime = enterTime;
                 earliestImpactContacts = impactContacts;
+            }
+            else if (enterTime == earliestImpactTime)
+            {
+                earliestImpactContacts.floor = earliestImpactContacts.floor || impactContacts.floor;
+                earliestImpactContacts.ceiling = earliestImpactContacts.ceiling || impactContacts.ceiling;
+                earliestImpactContacts.leftWall = earliestImpactContacts.leftWall || impactContacts.leftWall;
+                earliestImpactContacts.rightWall = earliestImpactContacts.rightWall || impactContacts.rightWall;
             }
         }
 

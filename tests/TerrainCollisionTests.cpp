@@ -464,6 +464,43 @@ int testMultipleCollisions()
     return failures;
 }
 
+int testSimultaneousCollisions()
+{
+    int failures = 0;
+    constexpr sf::FloatRect floor = {{0.f, 10.f}, {10.f, 10.f}};
+    constexpr sf::FloatRect rightWall = {{10.f, 0.f}, {10.f, 10.f}};
+    constexpr sf::FloatRect body = {{0.f, 0.f}, {5.f, 5.f}};
+    constexpr sf::Vector2f displacement = {10.f, 10.f};
+    constexpr sf::FloatRect expectedBounds = {{5.f, 5.f}, {5.f, 5.f}};
+    constexpr TerrainContacts expectedContacts{.floor = true, .rightWall = true};
+
+    const TerrainCollision floorFirstTerrain({floor, rightWall});
+    const TerrainMove floorFirstImpact = floorFirstTerrain.resolveMovement(body, displacement);
+    if (!expectBounds("simultaneous impacts with floor listed first", floorFirstImpact.bounds, expectedBounds))
+    {
+        ++failures;
+    }
+    if (!expectContacts(
+            "simultaneous impacts with floor listed first", floorFirstImpact.contacts, expectedContacts))
+    {
+        ++failures;
+    }
+
+    const TerrainCollision wallFirstTerrain({rightWall, floor});
+    const TerrainMove wallFirstImpact = wallFirstTerrain.resolveMovement(body, displacement);
+    if (!expectBounds("simultaneous impacts with wall listed first", wallFirstImpact.bounds, expectedBounds))
+    {
+        ++failures;
+    }
+    if (!expectContacts(
+            "simultaneous impacts with wall listed first", wallFirstImpact.contacts, expectedContacts))
+    {
+        ++failures;
+    }
+
+    return failures;
+}
+
 int main()
 {
     int failures = 0;
@@ -475,6 +512,7 @@ int main()
     failures += testCrossingThinTerrain();
     failures += testEarliestCollision();
     failures += testMultipleCollisions();
+    failures += testSimultaneousCollisions();
     // CTest uses the process exit code: zero passes, any nonzero value fails.
     return failures == 0 ? 0 : 1;
 }
