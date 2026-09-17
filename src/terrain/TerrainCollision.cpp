@@ -9,33 +9,44 @@
 #include <utility>
 
 // Positions may be negative, but every value must be finite and both dimensions must be positive.
-void validateRectangle(const sf::FloatRect& rect, const std::string& label) {
-    if (!std::isfinite(rect.position.x)) {
+void validateRectangle(const sf::FloatRect& rect, const std::string& label)
+{
+    if (!std::isfinite(rect.position.x))
+    {
         throw std::invalid_argument(label + ": x position must be finite");
     }
-    if (!std::isfinite(rect.position.y)) {
+    if (!std::isfinite(rect.position.y))
+    {
         throw std::invalid_argument(label + ": y position must be finite");
     }
-    if (!std::isfinite(rect.size.x)) {
+    if (!std::isfinite(rect.size.x))
+    {
         throw std::invalid_argument(label + ": width must be finite");
     }
-    if (!std::isfinite(rect.size.y)) {
+    if (!std::isfinite(rect.size.y))
+    {
         throw std::invalid_argument(label + ": height must be finite");
     }
-    if (rect.size.x <= 0.f) {
+    if (rect.size.x <= 0.f)
+    {
         throw std::invalid_argument(label + ": width must be greater than zero");
     }
-    if (rect.size.y <= 0.f) {
+    if (rect.size.y <= 0.f)
+    {
         throw std::invalid_argument(label + ": height must be greater than zero");
     }
 }
 
-std::optional<TerrainCollision::AxisInterval> TerrainCollision::calculateAxisInterval(const float bodyMin, const float bodyMax, const float solidMin, const float solidMax, const float displacement) {
+std::optional<TerrainCollision::AxisInterval> TerrainCollision::calculateAxisInterval(
+    const float bodyMin, const float bodyMax, const float solidMin, const float solidMax, const float displacement)
+{
     // With no movement, the spans either remain overlapped for the whole request or never overlap.
-    if (displacement == 0.f) {
+    if (displacement == 0.f)
+    {
         const bool spansOverlap = bodyMin < solidMax && bodyMax > solidMin;
         // Separated spans and spans that only touch at a boundary have no positive overlap.
-        if (!spansOverlap) {
+        if (!spansOverlap)
+        {
             // Return std::nullopt so optional has no value at runtime (i.e. there is no overlap time).
             return std::nullopt;
         }
@@ -49,37 +60,46 @@ std::optional<TerrainCollision::AxisInterval> TerrainCollision::calculateAxisInt
     const float solidMaxMeetingTime = (solidMax - bodyMin) / displacement;
 
     // Negative movement reverses their order, so always return the earlier time first.
-    if (solidMinMeetingTime < solidMaxMeetingTime) {
+    if (solidMinMeetingTime < solidMaxMeetingTime)
+    {
         return AxisInterval{solidMinMeetingTime, solidMaxMeetingTime};
     }
     return AxisInterval{solidMaxMeetingTime, solidMinMeetingTime};
 }
 
 TerrainCollision::TerrainCollision(std::vector<sf::FloatRect> solids)
-    : m_solids(std::move(solids)) {
+    : m_solids(std::move(solids))
+{
     // Validate every rectangle once when the terrain collection is created.
-    for (std::size_t index = 0; index < m_solids.size(); ++index) {
+    for (std::size_t index = 0; index < m_solids.size(); ++index)
+    {
         validateRectangle(m_solids[index], "terrain solid " + std::to_string(index));
     }
 }
 
 TerrainCollision::~TerrainCollision() = default;
 
-TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const sf::Vector2f displacement) const {
+TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const sf::Vector2f displacement) const
+{
     // Reject invalid geometry before doing any collision calculations.
     validateRectangle(startBounds, "body");
-    if (!std::isfinite(displacement.x)) {
+    if (!std::isfinite(displacement.x))
+    {
         throw std::invalid_argument("displacement: x must be finite");
     }
-    if (!std::isfinite(displacement.y)) {
+    if (!std::isfinite(displacement.y))
+    {
         throw std::invalid_argument("displacement: y must be finite");
     }
 
     // A valid movement must begin outside every terrain solid.
-    for (std::size_t index = 0; index < m_solids.size(); ++index) {
+    for (std::size_t index = 0; index < m_solids.size(); ++index)
+    {
         // Edge contact has no intersection area and is a valid starting position.
-        if (startBounds.findIntersection(m_solids[index])) {
-            throw std::invalid_argument("body's starting position is overlapping terrain solid " + std::to_string(index));
+        if (startBounds.findIntersection(m_solids[index]))
+        {
+            throw std::invalid_argument(
+                "body's starting position is overlapping terrain solid " + std::to_string(index));
         }
     }
 
@@ -87,7 +107,8 @@ TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const s
     float earliestImpactTime = 1.f;
     TerrainContacts earliestImpactContacts{};
 
-    for (const sf::FloatRect& solid : m_solids) {
+    for (const sf::FloatRect& solid : m_solids)
+    {
         const std::optional<AxisInterval> xInterval = calculateAxisInterval(
             startBounds.position.x, startBounds.position.x + startBounds.size.x,
             solid.position.x, solid.position.x + solid.size.x, displacement.x);
@@ -97,7 +118,8 @@ TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const s
             solid.position.y, solid.position.y + solid.size.y, displacement.y);
 
         // Both axes need to have an overlap interval for a collision to be possible. (Required but not enough - the 2 intervals need a valid intersection interval)
-        if (!xInterval || !yInterval) {
+        if (!xInterval || !yInterval)
+        {
             continue;
         }
 
@@ -106,41 +128,66 @@ TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const s
         const float leaveTime = std::min(xInterval->leaveTime, yInterval->leaveTime);
 
         // Ignore point grazes and overlap intervals that begin outside this movement request.
-        if (enterTime >= leaveTime || enterTime < 0.f || enterTime > 1.f) {
+        if (enterTime >= leaveTime || enterTime < 0.f || enterTime > 1.f)
+        {
             continue;
         }
 
         // The axis that enters last identifies the impacted side. Equal entry times impact a corner.
         TerrainContacts impactContacts{};
-        if (xInterval->enterTime >= yInterval->enterTime) {
-            if (displacement.x > 0.f) {
+        if (xInterval->enterTime >= yInterval->enterTime)
+        {
+            if (displacement.x > 0.f)
+            {
                 impactContacts.rightWall = true;
-            } else if (displacement.x < 0.f) {
+            }
+            else if (displacement.x < 0.f)
+            {
                 impactContacts.leftWall = true;
             }
         }
-        if (yInterval->enterTime >= xInterval->enterTime) {
-            if (displacement.y > 0.f) {
+        if (yInterval->enterTime >= xInterval->enterTime)
+        {
+            if (displacement.y > 0.f)
+            {
                 impactContacts.floor = true;
-            } else if (displacement.y < 0.f) {
+            }
+            else if (displacement.y < 0.f)
+            {
                 impactContacts.ceiling = true;
             }
         }
 
         // Keep the first impact along this movement request.
-        if (!impactFound || enterTime < earliestImpactTime) {
+        if (!impactFound || enterTime < earliestImpactTime)
+        {
             impactFound = true;
             earliestImpactTime = enterTime;
             earliestImpactContacts = impactContacts;
         }
     }
 
-    // No impact leaves the time at 1, so the complete displacement is applied.
+    // Move to the impact and keep the unused part of the request for sliding.
     startBounds.position.x += displacement.x * earliestImpactTime;
     startBounds.position.y += displacement.y * earliestImpactTime;
+    sf::Vector2f remainingDisplacement{
+        displacement.x * (1.f - earliestImpactTime), displacement.y * (1.f - earliestImpactTime)
+    };
+
+    // Separate checks let a corner block both remaining components.
+    if (earliestImpactContacts.floor || earliestImpactContacts.ceiling)
+    {
+        remainingDisplacement.y = 0.f;
+    }
+    if (earliestImpactContacts.leftWall || earliestImpactContacts.rightWall)
+    {
+        remainingDisplacement.x = 0.f;
+    }
+    startBounds.position += remainingDisplacement;
     return {startBounds, earliestImpactContacts};
 }
 
-const std::vector<sf::FloatRect>& TerrainCollision::getSolids() const {
+const std::vector<sf::FloatRect>& TerrainCollision::getSolids() const
+{
     return m_solids;
 }
