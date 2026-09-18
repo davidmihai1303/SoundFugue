@@ -573,6 +573,49 @@ int testAdjoiningFloorSeams()
     return failures;
 }
 
+// Checks final-position ground support, corner-only contact, and the vertical tolerance.
+int testGroundSupport()
+{
+    int failures = 0;
+    constexpr float groundSupportTolerance = Constants::Physics::groundSupportTolerance;
+    constexpr sf::FloatRect floor = {{10.f, 20.f}, {20.f, 10.f}};
+    const TerrainCollision terrain({floor});
+
+    // Feet are at y=20. Different X and Y values catch a mistaken X-based bottom calculation.
+    constexpr sf::FloatRect supportedBody = {{12.f, 15.f}, {5.f, 5.f}};
+    if (!terrain.hasGroundSupport(supportedBody))
+    {
+        std::cerr << "FAIL: body standing on floor should have ground support\n";
+        ++failures;
+    }
+
+    // The body's bottom-left corner meets the floor's top-right corner, with no horizontal overlap.
+    constexpr sf::FloatRect cornerOnlyBody = {{30.f, 15.f}, {5.f, 5.f}};
+    if (terrain.hasGroundSupport(cornerOnlyBody))
+    {
+        std::cerr << "FAIL: corner-only contact should not provide ground support\n";
+        ++failures;
+    }
+
+    // A gap of half the tolerance is accepted as rounding noise.
+    constexpr sf::FloatRect withinToleranceBody = {{12.f, 15.f - groundSupportTolerance / 2.f}, {5.f, 5.f}};
+    if (!terrain.hasGroundSupport(withinToleranceBody))
+    {
+        std::cerr << "FAIL: gap within ground support tolerance should be accepted\n";
+        ++failures;
+    }
+
+    // A gap of twice the tolerance is too large to count as feet meeting the floor.
+    constexpr sf::FloatRect beyondToleranceBody = {{12.f, 15.f - groundSupportTolerance * 2.f}, {5.f, 5.f}};
+    if (terrain.hasGroundSupport(beyondToleranceBody))
+    {
+        std::cerr << "FAIL: gap beyond ground support tolerance should be rejected\n";
+        ++failures;
+    }
+
+    return failures;
+}
+
 int main()
 {
     int failures = 0;
@@ -587,6 +630,7 @@ int main()
     failures += testSimultaneousCollisions();
     failures += testNearlySimultaneousCollisions();
     failures += testAdjoiningFloorSeams();
+    failures += testGroundSupport();
     // CTest uses the process exit code: zero passes, any nonzero value fails.
     return failures == 0 ? 0 : 1;
 }

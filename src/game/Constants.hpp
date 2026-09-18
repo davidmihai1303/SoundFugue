@@ -19,6 +19,7 @@ namespace Constants {
     namespace Physics {
         inline constexpr float Gravity = 2000.f;
         inline constexpr float collisionTimeTolerance = 0.00001f;
+        inline constexpr float groundSupportTolerance = 0.001f;
     }
 
     namespace Player {

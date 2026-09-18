@@ -142,14 +142,16 @@ TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const s
 
             // Ignore point grazes and intervals clearly outside this sweep.
             // Values just beyond a boundary are accepted as rounding noise and clamped back into the normalized range.
-            if (enterTime >= leaveTime - collisionTimeTolerance || enterTime < -collisionTimeTolerance || enterTime > 1.f + collisionTimeTolerance)
+            if (enterTime >= leaveTime - collisionTimeTolerance || enterTime < -collisionTimeTolerance || enterTime >
+                1.f + collisionTimeTolerance)
                 continue;
             enterTime = std::clamp(enterTime, 0.f, 1.f);
 
             // From this point downwards we have a confirmed collision
 
             // Nearly equal axis entry times mean this solid is entered through a corner.
-            const bool cornerCollision = std::abs(xInterval->enterTime - yInterval->enterTime) <= collisionTimeTolerance;
+            const bool cornerCollision = std::abs(xInterval->enterTime - yInterval->enterTime) <=
+                collisionTimeTolerance;
 
             // The axis that enters last identifies the impacted side. Equal entry times impact a corner.
             TerrainContacts impactContacts{};
@@ -249,6 +251,24 @@ TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const s
     }
 
     return {startBounds, contacts};
+}
+
+bool TerrainCollision::hasGroundSupport(const sf::FloatRect& bodyBounds) const
+{
+    constexpr float groundSupportTolerance = Constants::Physics::groundSupportTolerance;
+    validateRectangle(bodyBounds, "body");
+    const float bodyLeft = bodyBounds.position.x;
+    const float bodyRight = bodyBounds.position.x + bodyBounds.size.x;
+    const float bodyBottom = bodyBounds.position.y + bodyBounds.size.y;
+
+    for (const sf::FloatRect& solid : m_solids)
+    {
+        const bool feetMeetTop = std::abs(bodyBottom - solid.position.y) <= groundSupportTolerance;
+        const bool overlapsHorizontally = bodyLeft < solid.position.x + solid.size.x && bodyRight > solid.position.x;
+        if (feetMeetTop && overlapsHorizontally)
+            return true;
+    }
+    return false;
 }
 
 const std::vector<sf::FloatRect>& TerrainCollision::getSolids() const

@@ -18,7 +18,9 @@ public:
     [[nodiscard]] TerrainMove resolveMovement(sf::FloatRect startBounds, sf::Vector2f displacement) const;
     // Returns the stored rectangles without copying them.
     [[nodiscard]] const std::vector<sf::FloatRect>& getSolids() const;
-
+    // We need to know if the final position is supported by a solid
+    [[nodiscard]] bool hasGroundSupport(const sf::FloatRect& bodyBounds) const;
+    
 private:
     // The range of normalized movement times during which the body's span has positive overlap with a solid's span on one axis. Time 0 is the start and time 1 is the requested end.
     struct AxisInterval {
