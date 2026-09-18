@@ -616,6 +616,82 @@ int testGroundSupport()
     return failures;
 }
 
+// Checks support using the resolver's final bounds after idle, ledge, and jump movement.
+int testGroundSupportAfterMovement()
+{
+    int failures = 0;
+    constexpr sf::FloatRect floor = {{10.f, 20.f}, {20.f, 10.f}};
+    constexpr sf::FloatRect standingBody = {{12.f, 15.f}, {5.f, 5.f}};
+    const TerrainCollision terrain({floor});
+
+    // No movement produces no impact, but the unchanged feet still rest on the floor.
+    const TerrainMove idle = terrain.resolveMovement(standingBody, {0.f, 0.f});
+    if (!expectBounds("idle on floor", idle.bounds, standingBody))
+    {
+        ++failures;
+    }
+    if (!expectContacts("idle on floor", idle.contacts, {}))
+    {
+        ++failures;
+    }
+    if (!terrain.hasGroundSupport(idle.bounds))
+    {
+        std::cerr << "FAIL: idle body should retain ground support without a floor impact\n";
+        ++failures;
+    }
+
+    // Horizontal movement carries the whole body beyond the floor's right edge at x=30.
+    const TerrainMove walkedOff = terrain.resolveMovement(standingBody, {20.f, 0.f});
+    if (!expectBounds("walk off ledge", walkedOff.bounds, {{32.f, 15.f}, {5.f, 5.f}}))
+    {
+        ++failures;
+    }
+    if (!expectContacts("walk off ledge", walkedOff.contacts, {}))
+    {
+        ++failures;
+    }
+    if (terrain.hasGroundSupport(walkedOff.bounds))
+    {
+        std::cerr << "FAIL: body that walked off a ledge should lose ground support\n";
+        ++failures;
+    }
+
+    // Land at t=0.5, then slide off with the remaining X movement.
+    // The floor impact stays recorded even though there is no support at the final position.
+    const TerrainMove landedThenSlidOff = terrain.resolveMovement({{12.f, 5.f}, {5.f, 5.f}}, {20.f, 20.f});
+    if (!expectBounds("land then slide off ledge", landedThenSlidOff.bounds, {{32.f, 15.f}, {5.f, 5.f}}))
+    {
+        ++failures;
+    }
+    if (!expectContacts("land then slide off ledge", landedThenSlidOff.contacts, {.floor = true}))
+    {
+        ++failures;
+    }
+    if (terrain.hasGroundSupport(landedThenSlidOff.bounds))
+    {
+        std::cerr << "FAIL: earlier floor impact should not preserve support after sliding off\n";
+        ++failures;
+    }
+
+    // Touching the floor initially must not block a jump away from it.
+    const TerrainMove jumped = terrain.resolveMovement(standingBody, {0.f, -5.f});
+    if (!expectBounds("jump away from floor", jumped.bounds, {{12.f, 10.f}, {5.f, 5.f}}))
+    {
+        ++failures;
+    }
+    if (!expectContacts("jump away from floor", jumped.contacts, {}))
+    {
+        ++failures;
+    }
+    if (terrain.hasGroundSupport(jumped.bounds))
+    {
+        std::cerr << "FAIL: body that jumped above the floor should lose ground support\n";
+        ++failures;
+    }
+
+    return failures;
+}
+
 int main()
 {
     int failures = 0;
@@ -631,6 +707,7 @@ int main()
     failures += testNearlySimultaneousCollisions();
     failures += testAdjoiningFloorSeams();
     failures += testGroundSupport();
+    failures += testGroundSupportAfterMovement();
     // CTest uses the process exit code: zero passes, any nonzero value fails.
     return failures == 0 ? 0 : 1;
 }
