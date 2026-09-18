@@ -1,4 +1,5 @@
 #include "terrain/TerrainCollision.hpp"
+#include "game/Constants.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -81,6 +82,8 @@ TerrainCollision::~TerrainCollision() = default;
 
 TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const sf::Vector2f displacement) const
 {
+    constexpr float collisionTimeTolerance = Constants::Physics::collisionTimeTolerance;
+
     // Reject invalid geometry before doing any collision calculations.
     validateRectangle(startBounds, "body");
     if (!std::isfinite(displacement.x))
@@ -134,32 +137,30 @@ TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const s
                 continue;
 
             // Two-dimensional overlap begins when the later axis enters and ends when the earlier axis leaves.
-            const float enterTime = std::max(xInterval->enterTime, yInterval->enterTime);
+            float enterTime = std::max(xInterval->enterTime, yInterval->enterTime);
             const float leaveTime = std::min(xInterval->leaveTime, yInterval->leaveTime);
 
-            // Ignore point grazes and overlap intervals that begin outside this movement request.
-            if (enterTime >= leaveTime || enterTime < 0.f || enterTime > 1.f)
+            // Ignore point grazes and intervals clearly outside this sweep.
+            // Values just beyond a boundary are accepted as rounding noise and clamped back into the normalized range.
+            if (enterTime >= leaveTime - collisionTimeTolerance || enterTime < -collisionTimeTolerance || enterTime > 1.f + collisionTimeTolerance)
                 continue;
+            enterTime = std::clamp(enterTime, 0.f, 1.f);
 
             // From this point downwards we have a confirmed collision
 
-            // Equal axis entry times mean this solid is entered through a corner.
-            const bool cornerCollision = xInterval->enterTime == yInterval->enterTime;
+            // Nearly equal axis entry times mean this solid is entered through a corner.
+            const bool cornerCollision = std::abs(xInterval->enterTime - yInterval->enterTime) <= collisionTimeTolerance;
 
             // The axis that enters last identifies the impacted side. Equal entry times impact a corner.
             TerrainContacts impactContacts{};
-            if (xInterval->enterTime >= yInterval->enterTime)
+            if (cornerCollision || xInterval->enterTime > yInterval->enterTime)
             {
                 if (sweepDisplacement.x > 0.f)
-                {
                     impactContacts.rightWall = true;
-                }
                 else if (sweepDisplacement.x < 0.f)
-                {
                     impactContacts.leftWall = true;
-                }
             }
-            if (yInterval->enterTime >= xInterval->enterTime)
+            if (cornerCollision || yInterval->enterTime > xInterval->enterTime)
             {
                 if (sweepDisplacement.y > 0.f)
                     impactContacts.floor = true;
@@ -168,7 +169,7 @@ TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const s
             }
 
             // Keep the earliest impact.
-            if (!impactFound || enterTime < earliestImpactTime)
+            if (!impactFound || enterTime < earliestImpactTime - collisionTimeTolerance)
             {
                 impactFound = true;
                 earliestImpactTime = enterTime;
@@ -185,9 +186,12 @@ TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const s
                     earliestFaceContacts = impactContacts;
                 }
             }
-            // Merge contacts that happen at the same time
-            else if (enterTime == earliestImpactTime)
+            // Merge contacts whose impact times differ only by floating-point rounding (i.e. happen at the same time).
+            else if (std::abs(enterTime - earliestImpactTime) <= collisionTimeTolerance)
             {
+                // Moving to the smaller time avoids advancing slightly beyond either surface.
+                earliestImpactTime = std::min(earliestImpactTime, enterTime);
+
                 // Merge this candidate only into its own category to preserve where each contact came from.
                 if (cornerCollision)
                 {

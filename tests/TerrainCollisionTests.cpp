@@ -3,6 +3,7 @@
 //
 
 #include "terrain/TerrainCollision.hpp"
+#include "game/Constants.hpp"
 
 #include <exception>
 #include <iostream>
@@ -501,6 +502,33 @@ int testSimultaneousCollisions()
     return failures;
 }
 
+// Treats impacts separated only by the time tolerance as simultaneous, stopping at the earlier surface.
+int testNearlySimultaneousCollisions()
+{
+    int failures = 0;
+    constexpr float movementDistance = 100.f;
+    constexpr float timeDifference = Constants::Physics::collisionTimeTolerance / 4.f;
+    constexpr sf::FloatRect floor = {{0.f, 55.f}, {200.f, 10.f}};
+    constexpr sf::FloatRect rightWall = {{55.f + movementDistance * timeDifference, 0.f}, {10.f, 200.f}};
+    constexpr sf::FloatRect body = {{0.f, 0.f}, {5.f, 5.f}};
+    constexpr sf::Vector2f displacement = {movementDistance, movementDistance};
+
+    // The wall is listed first and is reached a tiny bit later than the floor.
+    // The tolerance must merge their contacts and std::min must retain the floor's earlier time.
+    const TerrainCollision terrain({rightWall, floor});
+    const TerrainMove impact = terrain.resolveMovement(body, displacement);
+    if (!expectBounds("nearly simultaneous floor and wall", impact.bounds, {{50.f, 50.f}, {5.f, 5.f}}))
+    {
+        ++failures;
+    }
+    if (!expectContacts("nearly simultaneous floor and wall", impact.contacts,{.floor = true, .rightWall = true}))
+    {
+        ++failures;
+    }
+
+    return failures;
+}
+
 int testAdjoiningFloorSeams()
 {
     int failures = 0;
@@ -557,6 +585,7 @@ int main()
     failures += testEarliestCollision();
     failures += testMultipleCollisions();
     failures += testSimultaneousCollisions();
+    failures += testNearlySimultaneousCollisions();
     failures += testAdjoiningFloorSeams();
     // CTest uses the process exit code: zero passes, any nonzero value fails.
     return failures == 0 ? 0 : 1;

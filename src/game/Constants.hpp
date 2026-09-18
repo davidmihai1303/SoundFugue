@@ -5,6 +5,8 @@
 #ifndef SOUNDFUGUE_CONSTANTS_HPP
 #define SOUNDFUGUE_CONSTANTS_HPP
 
+#include <SFML/Graphics/Color.hpp>
+
 namespace Constants {
     inline constexpr unsigned int FrameRateLimit = 540;
     namespace Window {
@@ -16,6 +18,7 @@ namespace Constants {
 
     namespace Physics {
         inline constexpr float Gravity = 2000.f;
+        inline constexpr float collisionTimeTolerance = 0.00001f;
     }
 
     namespace Player {
