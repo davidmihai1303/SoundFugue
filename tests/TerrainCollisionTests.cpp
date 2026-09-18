@@ -501,6 +501,50 @@ int testSimultaneousCollisions()
     return failures;
 }
 
+int testAdjoiningFloorSeams()
+{
+    int failures = 0;
+    constexpr sf::FloatRect leftFloor = {{0.f, 10.f}, {10.f, 10.f}};
+    constexpr sf::FloatRect rightFloor = {{10.f, 10.f}, {10.f, 10.f}};
+    const TerrainCollision terrain({leftFloor, rightFloor});
+
+    const TerrainMove movingRight = terrain.resolveMovement({{5.f, 5.f}, {5.f, 5.f}}, {4.f, 1.f});
+    if (!expectBounds("cross floor seam moving right", movingRight.bounds, {{9.f, 5.f}, {5.f, 5.f}}))
+    {
+        ++failures;
+    }
+    if (!expectContacts("cross floor seam moving right", movingRight.contacts, {.floor = true}))
+    {
+        ++failures;
+    }
+
+    const TerrainMove movingLeft = terrain.resolveMovement({{10.f, 5.f}, {5.f, 5.f}}, {-4.f, 1.f});
+    if (!expectBounds("cross floor seam moving left", movingLeft.bounds, {{6.f, 5.f}, {5.f, 5.f}}))
+    {
+        ++failures;
+    }
+    if (!expectContacts("cross floor seam moving left", movingLeft.contacts, {.floor = true}))
+    {
+        ++failures;
+    }
+
+    constexpr sf::FloatRect upperWall = {{20.f, 0.f}, {10.f, 10.f}};
+    constexpr sf::FloatRect lowerWall = {{20.f, 10.f}, {10.f, 10.f}};
+    const TerrainCollision wallTerrain({upperWall, lowerWall});
+
+    const TerrainMove movingDown = wallTerrain.resolveMovement({{15.f, 5.f}, {5.f, 5.f}}, {5.f, 5.f});
+    if (!expectBounds("cross wall seam moving down", movingDown.bounds, {{15.f, 10.f}, {5.f, 5.f}}))
+    {
+        ++failures;
+    }
+    if (!expectContacts("cross wall seam moving down", movingDown.contacts, {.rightWall = true}))
+    {
+        ++failures;
+    }
+
+    return failures;
+}
+
 int main()
 {
     int failures = 0;
@@ -513,6 +557,7 @@ int main()
     failures += testEarliestCollision();
     failures += testMultipleCollisions();
     failures += testSimultaneousCollisions();
+    failures += testAdjoiningFloorSeams();
     // CTest uses the process exit code: zero passes, any nonzero value fails.
     return failures == 0 ? 0 : 1;
 }

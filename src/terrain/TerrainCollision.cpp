@@ -115,7 +115,9 @@ TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const s
         const sf::Vector2f sweepDisplacement = remainingDisplacement;
         bool impactFound = false;
         float earliestImpactTime = 1.f;
-        TerrainContacts earliestImpactContacts{};
+        // Keep face and corner candidates separate so internal terrain seams can be identified later.
+        TerrainContacts earliestFaceContacts{};
+        TerrainContacts earliestCornerContacts{};
 
         for (const sf::FloatRect& solid : m_solids)
         {
@@ -139,14 +141,23 @@ TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const s
             if (enterTime >= leaveTime || enterTime < 0.f || enterTime > 1.f)
                 continue;
 
+            // From this point downwards we have a confirmed collision
+
+            // Equal axis entry times mean this solid is entered through a corner.
+            const bool cornerCollision = xInterval->enterTime == yInterval->enterTime;
+
             // The axis that enters last identifies the impacted side. Equal entry times impact a corner.
             TerrainContacts impactContacts{};
             if (xInterval->enterTime >= yInterval->enterTime)
             {
                 if (sweepDisplacement.x > 0.f)
+                {
                     impactContacts.rightWall = true;
+                }
                 else if (sweepDisplacement.x < 0.f)
+                {
                     impactContacts.leftWall = true;
+                }
             }
             if (yInterval->enterTime >= xInterval->enterTime)
             {
@@ -156,20 +167,60 @@ TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const s
                     impactContacts.ceiling = true;
             }
 
-            // Keep the earliest impact and merge contacts that happen at the same time.
+            // Keep the earliest impact.
             if (!impactFound || enterTime < earliestImpactTime)
             {
                 impactFound = true;
                 earliestImpactTime = enterTime;
-                earliestImpactContacts = impactContacts;
+
+                // Contacts saved for the previous impact time are no longer relevant.
+                earliestFaceContacts = {};
+                earliestCornerContacts = {};
+                if (cornerCollision)
+                {
+                    earliestCornerContacts = impactContacts;
+                }
+                else
+                {
+                    earliestFaceContacts = impactContacts;
+                }
             }
+            // Merge contacts that happen at the same time
             else if (enterTime == earliestImpactTime)
             {
-                earliestImpactContacts.floor = earliestImpactContacts.floor || impactContacts.floor;
-                earliestImpactContacts.ceiling = earliestImpactContacts.ceiling || impactContacts.ceiling;
-                earliestImpactContacts.leftWall = earliestImpactContacts.leftWall || impactContacts.leftWall;
-                earliestImpactContacts.rightWall = earliestImpactContacts.rightWall || impactContacts.rightWall;
+                // Merge this candidate only into its own category to preserve where each contact came from.
+                if (cornerCollision)
+                {
+                    earliestCornerContacts.floor = earliestCornerContacts.floor || impactContacts.floor;
+                    earliestCornerContacts.ceiling = earliestCornerContacts.ceiling || impactContacts.ceiling;
+                    earliestCornerContacts.leftWall = earliestCornerContacts.leftWall || impactContacts.leftWall;
+                    earliestCornerContacts.rightWall = earliestCornerContacts.rightWall || impactContacts.rightWall;
+                }
+                else
+                {
+                    earliestFaceContacts.floor = earliestFaceContacts.floor || impactContacts.floor;
+                    earliestFaceContacts.ceiling = earliestFaceContacts.ceiling || impactContacts.ceiling;
+                    earliestFaceContacts.leftWall = earliestFaceContacts.leftWall || impactContacts.leftWall;
+                    earliestFaceContacts.rightWall = earliestFaceContacts.rightWall || impactContacts.rightWall;
+                }
             }
+        }
+
+        const bool hasFloorOrCeilingFace = earliestFaceContacts.floor || earliestFaceContacts.ceiling;
+        const bool hasWallFace = earliestFaceContacts.leftWall || earliestFaceContacts.rightWall;
+
+        // Face contacts are always preserved. Corner contacts are kept only when a perpendicular face does not prove that the corner belongs to an internal seam.
+        TerrainContacts earliestImpactContacts{};
+        earliestImpactContacts = earliestFaceContacts;
+        if (!hasWallFace)
+        {
+            earliestImpactContacts.floor = earliestImpactContacts.floor || earliestCornerContacts.floor;
+            earliestImpactContacts.ceiling = earliestImpactContacts.ceiling || earliestCornerContacts.ceiling;
+        }
+        if (!hasFloorOrCeilingFace)
+        {
+            earliestImpactContacts.leftWall = earliestImpactContacts.leftWall || earliestCornerContacts.leftWall;
+            earliestImpactContacts.rightWall = earliestImpactContacts.rightWall || earliestCornerContacts.rightWall;
         }
 
         // Move to the impact and keep the unused part of the request for sliding.
