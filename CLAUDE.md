@@ -8,7 +8,7 @@ Read this before doing anything in this repo. It has two jobs: set the rules for
 
 This is David's project, built partly as his own learning exercise in C++ and game architecture. The agent's job is to implement exactly what's asked, explain reasoning clearly, and otherwise stay out of the driver's seat.
 
-1. **David decides scope and sequencing, not the agent.** Never jump ahead in `COLLISION_IMPLEMENTATION_GUIDE copy.md` (or any other roadmap) just because the next step is obvious. This project has a documented history of exactly this mistake — see `COLLISION_ENGINE_DEVELOPMENT_DRAFT copy.md`, mistake 18.15 ("Implementing later checklist work before it was requested"). If it wasn't explicitly requested, don't build it, even as a "small bonus while I'm in there."
+1. **David decides scope and sequencing, not the agent.** Never jump ahead in `COLLISION_IMPLEMENTATION_GUIDE.md` (or any other roadmap) just because the next step is obvious. This project has a documented history of exactly this mistake — see `COLLISION_ENGINE_DEVELOPMENT_DRAFT.md`, mistake 18.15 ("Implementing later checklist work before it was requested"). If it wasn't explicitly requested, don't build it, even as a "small bonus while I'm in there."
 2. **Work in small, reviewable increments.** One requested change, one diff, reviewed before moving on. Don't bundle unrelated concerns into a single edit. If a "small" fix turns out to require touching several files or restructuring an interface, say so and confirm scope before proceeding rather than silently expanding the change.
 3. **Don't add things that weren't asked for**: no extra tests, no defensive code for cases that can't happen, no refactors "while I'm here," no speculative support for explicitly deferred scope (slopes, one-way platforms, moving platforms, actor pushing, rotated shapes — see the collision draft's "Scope chosen" section). Deferred means deferred until asked for.
 4. **Ask when a decision is genuinely David's to make**, rather than guessing — e.g. which class owns a piece of logic, what a public interface should look like, how to interpret an ambiguous instruction. Guessing wrong on an architectural call is more expensive to undo than asking.
@@ -109,11 +109,11 @@ The game loads resources via relative paths (`"../resources/..."`), so run the `
 
 | File | Role | Tense / content rule |
 | --- | --- | --- |
-| `COLLISION_ENGINE_DEVELOPMENT_DRAFT copy.md` | Narrative history of the terrain resolver: how it works, why each piece exists, mistakes made and fixed. | Past/present tense only — describes exclusively what is already implemented and tested. Deliberately excludes future/planned work; update it once a step is actually finished, never before. |
-| `COLLISION_IMPLEMENTATION_GUIDE copy.md` | The authoritative forward checklist for connecting the resolver to the game (Steps 1–12, checkbox per sub-item). | This is "what's next" — follow it one step at a time, in order, and don't tick boxes that haven't actually been done. |
+| `COLLISION_ENGINE_DEVELOPMENT_DRAFT.md` | Narrative history of the terrain resolver: how it works, why each piece exists, mistakes made and fixed. | Past/present tense only — describes exclusively what is already implemented and tested. Deliberately excludes future/planned work; update it once a step is actually finished, never before. |
+| `COLLISION_IMPLEMENTATION_GUIDE.md` | The authoritative forward checklist for connecting the resolver to the game (Steps 1–12, checkbox per sub-item). | This is "what's next" — follow it one step at a time, in order, and don't tick boxes that haven't actually been done. |
 | `MOUSE_INPUT_DIAGNOSTICS.md` | An open, unresolved investigation into intermittent mouse-click/attack failures. | Diagnostic protocol only — no fix has been applied yet and no root cause is confirmed. Follow its procedure to gather evidence rather than guessing at a fix. |
 
-Both `COLLISION_ENGINE_DEVELOPMENT_DRAFT copy.md` and `COLLISION_IMPLEMENTATION_GUIDE copy.md` are currently untracked in git — they're David's working drafts, not yet committed. Don't commit them, or anything else, without being asked (Rule 5).
+Both `COLLISION_ENGINE_DEVELOPMENT_DRAFT.md` and `COLLISION_IMPLEMENTATION_GUIDE.md` are currently untracked in git — they're David's working drafts, not yet committed. Don't commit them, or anything else, without being asked (Rule 5).
 
 ---
 
@@ -126,4 +126,4 @@ As of the last work in this repo:
 - **Step 7 onward** (actually wiring `TerrainCollision` into `Player`/`Enemy`/`World`, loading terrain from Tiled via a `TerrainMapLoader`) — **not started.**
 - **Known open bug**: intermittent mouse-click/attack failures, cause unconfirmed. See `MOUSE_INPUT_DIAGNOSTICS.md` for the diagnostic protocol; no fix has been attempted yet.
 
-Confirm the above against `git log --oneline` and the checkbox state in `COLLISION_IMPLEMENTATION_GUIDE copy.md` before acting on it — this section will drift out of date as work continues.
+Confirm the above against `git log --oneline` and the checkbox state in `COLLISION_IMPLEMENTATION_GUIDE.md` before acting on it — this section will drift out of date as work continues.

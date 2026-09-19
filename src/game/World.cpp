@@ -5,6 +5,9 @@
 #include "game/World.hpp"
 
 World::World(sf::RenderWindow &window) : m_window(window),
+                                         m_terrain(std::vector{
+                                             sf::FloatRect({-500.f, 550.f}, {6000.f, 50.f})
+                                         }),
                                          m_playerStandingTexture("../resources/sprites/aeris_standing_animation_spritesheet.png"),
                                          m_playerWalkingTexture("../resources/sprites/aeris_walking_animation_spritesheet.png"),
                                          m_playerAttackingTexture("../resources/sprites/aeris_attacking_animation_spritesheet.png"),
