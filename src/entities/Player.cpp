@@ -72,7 +72,7 @@ Player::Player(const sf::Texture &standingTexture, const sf::Texture &walkingTex
     }); // We keep the same x from the standing/walking animation
 }
 
-void Player::update(const sf::Time dt) {
+void Player::update(const sf::Time dt, const TerrainCollision& terrain) {
     movementLogic(dt);
     groundCollisionLogic();
     attackingLogic();

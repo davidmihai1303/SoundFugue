@@ -6,6 +6,7 @@
 #define SOUNDFUGUE_ENTITY_HPP
 
 #include <SFML/Graphics.hpp>
+#include "terrain/TerrainCollision.hpp"
 
 class Entity {
 public:
@@ -15,7 +16,7 @@ public:
 
     virtual ~Entity() = default;
 
-    virtual void update(sf::Time dt) = 0;
+    virtual void update(sf::Time dt, const TerrainCollision &terrain) = 0;
 
     virtual void draw(sf::RenderTarget &target) const = 0;
 

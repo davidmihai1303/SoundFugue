@@ -33,7 +33,7 @@ Enemy::Enemy(const sf::Vector2f &position, const sf::Vector2f &size,
     m_walkingSprite.setScale({1.3f, 1.3f});
 }
 
-void Enemy::update(const sf::Time dt) {
+void Enemy::update(const sf::Time dt, const TerrainCollision& terrain) {
     movementLogic(dt);
     animationLogic(dt);
 

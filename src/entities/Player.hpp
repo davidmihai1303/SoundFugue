@@ -16,7 +16,7 @@ public:
 
     explicit Player(const sf::Texture& standingTexture, const sf::Texture& walkingTexture, const sf::Texture& attackingTexture);
 
-    void update(sf::Time dt) override;
+    void update(sf::Time dt, const TerrainCollision& terrain) override;
 
     void draw(sf::RenderTarget &target) const override;
 

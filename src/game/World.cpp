@@ -55,7 +55,7 @@ void World::update(const sf::Time dt, const InputState &inputState) {
     }
 
     for (const auto &e: m_entities)
-        (*e).update(dt);
+        (*e).update(dt, m_terrain);
     // It uses its own specific update func (the one with override)
 
     handleCollisions();

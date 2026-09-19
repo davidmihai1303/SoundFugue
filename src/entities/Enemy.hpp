@@ -7,6 +7,7 @@
 
 #include <SFML/Graphics.hpp>
 #include "entities/Entity.hpp"
+#include "terrain/TerrainCollision.hpp"
 
 class Enemy : public Entity {
 public:
@@ -14,7 +15,7 @@ public:
 
     Enemy(const sf::Vector2f &position, const sf::Vector2f &size, const sf::Texture &walkingTexture);
 
-    void update(sf::Time dt) override;
+    void update(sf::Time dt, const TerrainCollision& terrain) override;
 
     void draw(sf::RenderTarget &target) const override;
 
