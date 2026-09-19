@@ -34,8 +34,6 @@ public:
 private:
     void handleCollisions();
 
-    void collision_player_ground(sf::FloatRect &playerBounds);
-
     void collision_player_enemies(const sf::FloatRect &playerBounds);
 
     void collision_player_notes(const sf::FloatRect &playerBounds);

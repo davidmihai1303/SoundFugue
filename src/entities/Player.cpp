@@ -19,7 +19,6 @@ Player::Player(const sf::Texture &standingTexture, const sf::Texture &walkingTex
     m_hasDashed(false),
 
     // --- Animations
-    // TODO  experiment with other values
     m_animationToDraw(0),
 
     m_standing_currentFrame(0),
@@ -75,6 +74,7 @@ Player::Player(const sf::Texture &standingTexture, const sf::Texture &walkingTex
 
 void Player::update(const sf::Time dt) {
     movementLogic(dt);
+    groundCollisionLogic();
     attackingLogic();
     animationLogic(dt);
 
@@ -153,6 +153,18 @@ void Player::movementLogic(const sf::Time dt) {
         m_standingSprite.setScale({-1.f * m_standingSprite.getScale().x, 1.f});
         m_walkingSprite.setScale({-1.f * m_walkingSprite.getScale().x, 1.f});
         m_attackingSprite.setScale({-1.f * m_attackingSprite.getScale().x, 1.f});
+    }
+}
+
+void Player::groundCollisionLogic() {
+    if (const sf::FloatRect playerBounds = getBounds(); m_groundBounds.findIntersection(playerBounds)) {
+        // Move player on top of ground
+        setPosition({playerBounds.position.x, m_groundBounds.position.y - getPlayerDimensions().size.y});
+        setOnGround(true);
+        setVelocity({getVelocity().x, 0.f});
+        resetDash();
+    } else {
+        setOnGround(false);
     }
 }
 
@@ -379,6 +391,10 @@ void Player::draw(sf::RenderTarget &target) const {
 
 void Player::setInputState(const InputState &inputState) {
     m_inputState = inputState;
+}
+
+void Player::setGroundBounds(const sf::FloatRect &groundBounds) {
+    m_groundBounds = groundBounds;
 }
 
 // Code=1

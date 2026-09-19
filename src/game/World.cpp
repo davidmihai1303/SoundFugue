@@ -46,8 +46,10 @@ void World::update(const sf::Time dt, const InputState &inputState) {
         layer->update(dt);
     }
 
-    if (m_player)
+    if (m_player) {
         (*m_player).setInputState(inputState);
+        (*m_player).setGroundBounds(m_ground.getGlobalBounds());
+    }
 
     for (const auto &e: m_entities)
         (*e).update(dt);
@@ -58,32 +60,10 @@ void World::update(const sf::Time dt, const InputState &inputState) {
 
 void World::handleCollisions() {
     sf::FloatRect playerBounds = (*m_player).getBounds();
-
-    // passed through reference to avoid creating+deleting chunks of memory repeatedly
-    collision_player_ground(playerBounds);
-    // set the bounds again in case the player moves
-    playerBounds = (*m_player).getBounds();
     collision_player_enemies(playerBounds);
 
     playerBounds = (*m_player).getBounds();
     collision_player_notes(playerBounds);
-}
-
-void World::collision_player_ground(sf::FloatRect &playerBounds) {
-    if (!m_player)
-        return;
-
-    if (const sf::FloatRect groundBounds = m_ground.getGlobalBounds(); groundBounds.findIntersection(playerBounds)) {
-        // Move player on top of ground
-        (*m_player).setPosition({
-            playerBounds.position.x, groundBounds.position.y - (*m_player).getPlayerDimensions().size.y
-        });
-        (*m_player).setOnGround(true);
-        (*m_player).setVelocity({(*m_player).getVelocity().x, 0.f});
-        (*m_player).resetDash();
-    } else {
-        (*m_player).setOnGround(false);
-    }
 }
 
 void World::collision_player_enemies(const sf::FloatRect &playerBounds) {

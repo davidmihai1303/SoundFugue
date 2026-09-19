@@ -33,6 +33,8 @@ public:
 
     void setInputState(const InputState &inputState);
 
+    void setGroundBounds(const sf::FloatRect &groundBounds);
+
     void resetDash();
 
     void setPosition(const sf::Vector2f &position) override;
@@ -49,6 +51,7 @@ private:
     // --------
 
     InputState m_inputState;
+    sf::FloatRect m_groundBounds;
     sf::Vector2f m_movement;
     bool m_onGround;
     sf::Time m_cooldownAttackTime = sf::seconds(Constants::Player::AttackCooldown);
@@ -88,6 +91,7 @@ private:
     int m_attacking_numFrames;
     // ---------------------------
 
+    void groundCollisionLogic();
     void animationLogic(sf::Time dt);
     void standingAnimation(sf::Time dt);
     void walkingAnimation(sf::Time dt);
