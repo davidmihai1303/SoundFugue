@@ -73,9 +73,8 @@ Player::Player(const sf::Texture &standingTexture, const sf::Texture &walkingTex
 }
 
 void Player::update(const sf::Time dt, const TerrainCollision& terrain) {
-    // TODO Step 7.5: feed displacement into terrain.resolveMovement() instead of groundCollisionLogic()
     const sf::Vector2f displacement = movementLogic(dt);
-    groundCollisionLogic();
+    resolveTerrainMovement(m_shape.getGlobalBounds(), terrain, displacement);
     attackingLogic();
     animationLogic(dt);
 
@@ -154,18 +153,6 @@ sf::Vector2f Player::movementLogic(const sf::Time dt) {
     }
 
     return (m_movement + m_velocity) * dt.asSeconds();
-}
-
-void Player::groundCollisionLogic() {
-    if (const sf::FloatRect playerBounds = getBounds(); m_groundBounds.findIntersection(playerBounds)) {
-        // Move player on top of ground
-        setPosition({playerBounds.position.x, m_groundBounds.position.y - getPlayerDimensions().size.y});
-        setOnGround(true);
-        setVelocity({getVelocity().x, 0.f});
-        resetDash();
-    } else {
-        setOnGround(false);
-    }
 }
 
 void Player::attackingLogic() {

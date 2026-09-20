@@ -36,6 +36,13 @@ void Entity::setVelocity(const sf::Vector2f &velocity) {
     m_velocity = velocity;
 }
 
+TerrainMove Entity::resolveTerrainMovement(const sf::FloatRect& body, const TerrainCollision& terrain, const sf::Vector2f& displacement)
+{
+    const TerrainMove moved = terrain.resolveMovement(body, displacement);
+    setPosition(moved.bounds.position);
+    return moved;
+}
+
 // std::ostream &operator<<(std::ostream &os, const Entity &e) {
 //     os << "Entity(pos: " << e.m_shape.getGlobalBounds().position.x << ", " << e.m_shape.getGlobalBounds().position.y
 //             << ", vel: " << e.m_velocity.x << ", " << e.m_velocity.y << ")";

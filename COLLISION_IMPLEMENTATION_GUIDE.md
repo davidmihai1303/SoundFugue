@@ -138,9 +138,9 @@ Keep David's idea as a possible later optimization: check the stored floor-impac
 
 - [x] Let `World` own a `TerrainCollision` instance. Initially populate it with the existing floor: position (-500, 550), size 6000 by 50 pixels.
 - [x] Pass a read-only terrain reference through the entity update and movement interfaces. Update both derived classes and the `World` call site together; the spider starts using the resolver in Step 8.
-- [ ] In player movement, calculate input movement, jump/gravity velocity, sprint modifiers, and dash motion before asking the resolver to move the body.
-- [ ] Include both `m_movement` and `m_velocity` when calculating displacement. Using velocity alone would omit ordinary keyboard movement.
-- [ ] Replace direct shape movement with applying the resolver's corrected position exactly once.
+- [x] In player movement, calculate input movement, jump/gravity velocity, sprint modifiers, and dash motion before asking the resolver to move the body.
+- [x] Include both `m_movement` and `m_velocity` when calculating displacement. Using velocity alone would omit ordinary keyboard movement.
+- [x] Replace direct shape movement with applying the resolver's corrected position exactly once.
 - [ ] Zero persistent velocity components pointing into contacted surfaces. Preserve motion along the surface and motion away from it.
 - [ ] Set `m_onGround` from final support. Restore dash availability on landing. A ceiling or wall contact must not enable jumping or restore an airborne dash.
 - [ ] During an airborne attack, retain the existing freeze rules. A wall clears horizontal dash velocity while the attack finishes normally.

@@ -91,7 +91,6 @@ private:
     int m_attacking_numFrames;
     // ---------------------------
 
-    void groundCollisionLogic();
     void animationLogic(sf::Time dt);
     void standingAnimation(sf::Time dt);
     void walkingAnimation(sf::Time dt);

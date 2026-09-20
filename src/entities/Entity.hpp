@@ -52,6 +52,8 @@ protected:
     // Enemy default = False / Left (this will be revised. Code=3)
     bool m_currentFacingDirection;
     bool m_lastFacingDirection;
+
+    TerrainMove resolveTerrainMovement(const sf::FloatRect& body, const TerrainCollision& terrain, const sf::Vector2f& displacement);
 };
 
 
