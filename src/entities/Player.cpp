@@ -73,7 +73,8 @@ Player::Player(const sf::Texture &standingTexture, const sf::Texture &walkingTex
 }
 
 void Player::update(const sf::Time dt, const TerrainCollision& terrain) {
-    movementLogic(dt);
+    // TODO Step 7.5: feed displacement into terrain.resolveMovement() instead of groundCollisionLogic()
+    const sf::Vector2f displacement = movementLogic(dt);
     groundCollisionLogic();
     attackingLogic();
     animationLogic(dt);
@@ -81,7 +82,7 @@ void Player::update(const sf::Time dt, const TerrainCollision& terrain) {
     m_lastFacingDirection = m_currentFacingDirection; // update for next frame
 }
 
-void Player::movementLogic(const sf::Time dt) {
+sf::Vector2f Player::movementLogic(const sf::Time dt) {
     // Left-Right movement
     m_movement = sf::Vector2f(0.f, 0.f);
     if (!m_isFrozen) {
@@ -145,15 +146,14 @@ void Player::movementLogic(const sf::Time dt) {
         m_velocity.x *= friction;
     }
 
-    // Move horizontally and vertically
-    m_shape.move((m_movement + m_velocity) * dt.asSeconds());
-
     // Flip the sprites
     if (m_lastFacingDirection != m_currentFacingDirection) {
         m_standingSprite.setScale({-1.f * m_standingSprite.getScale().x, 1.f});
         m_walkingSprite.setScale({-1.f * m_walkingSprite.getScale().x, 1.f});
         m_attackingSprite.setScale({-1.f * m_attackingSprite.getScale().x, 1.f});
     }
+
+    return (m_movement + m_velocity) * dt.asSeconds();
 }
 
 void Player::groundCollisionLogic() {

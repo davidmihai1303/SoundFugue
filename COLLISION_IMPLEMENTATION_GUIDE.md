@@ -137,7 +137,7 @@ Keep David's idea as a possible later optimization: check the stored floor-impac
 **Edit:** `Entity`, `Player`, `Enemy`, and `World` declarations and definitions together.
 
 - [x] Let `World` own a `TerrainCollision` instance. Initially populate it with the existing floor: position (-500, 550), size 6000 by 50 pixels.
-- [ ] Pass a read-only terrain reference through the entity update and movement interfaces. Update both derived classes and the `World` call site together; the spider starts using the resolver in Step 8.
+- [x] Pass a read-only terrain reference through the entity update and movement interfaces. Update both derived classes and the `World` call site together; the spider starts using the resolver in Step 8.
 - [ ] In player movement, calculate input movement, jump/gravity velocity, sprint modifiers, and dash motion before asking the resolver to move the body.
 - [ ] Include both `m_movement` and `m_velocity` when calculating displacement. Using velocity alone would omit ordinary keyboard movement.
 - [ ] Replace direct shape movement with applying the resolver's corrected position exactly once.

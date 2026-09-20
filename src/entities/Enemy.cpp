@@ -5,13 +5,14 @@
 #include "entities/Enemy.hpp"
 #include "game/Constants.hpp"
 
-Enemy::Enemy(const sf::Vector2f &position, const sf::Vector2f &size,
-             const sf::Texture &walkingTexture) : m_walkingSprite(walkingTexture),
+Enemy::Enemy(const sf::Vector2f& position, const sf::Vector2f& size,
+             const sf::Texture& walkingTexture) : m_walkingSprite(walkingTexture),
                                                   m_walking_currentFrame(0),
                                                   m_walking_animDuration(
                                                       Constants::Spider::Animation::WalkingAnimDuration),
                                                   m_walking_elapsedTime(0.f),
-                                                  m_walking_numFrames(Constants::Spider::Animation::WalkingFrameCount) {
+                                                  m_walking_numFrames(Constants::Spider::Animation::WalkingFrameCount)
+{
     m_shape.setSize(size);
     m_shape.setFillColor(sf::Color::Red);
     m_shape.setPosition(position);
@@ -33,7 +34,8 @@ Enemy::Enemy(const sf::Vector2f &position, const sf::Vector2f &size,
     m_walkingSprite.setScale({1.3f, 1.3f});
 }
 
-void Enemy::update(const sf::Time dt, const TerrainCollision& terrain) {
+void Enemy::update(const sf::Time dt, const TerrainCollision& terrain)
+{
     movementLogic(dt);
     animationLogic(dt);
 
@@ -41,38 +43,48 @@ void Enemy::update(const sf::Time dt, const TerrainCollision& terrain) {
 }
 
 
-void Enemy::movementLogic(const sf::Time dt) {
+sf::Vector2f Enemy::movementLogic(const sf::Time dt)
+{
     m_shape.move(m_velocity * dt.asSeconds());
 
-    if (const float x = m_shape.getPosition().x; x < m_leftLimit) {
+    if (const float x = m_shape.getPosition().x; x < m_leftLimit)
+    {
         m_shape.setPosition({m_leftLimit, m_shape.getPosition().y});
         m_velocity.x = std::abs(m_velocity.x);
         m_currentFacingDirection = false;
-    } else if (x + m_shape.getSize().x > m_rightLimit) {
+    }
+    else if (x + m_shape.getSize().x > m_rightLimit)
+    {
         m_shape.setPosition({m_rightLimit - m_shape.getSize().x, m_shape.getPosition().y});
         m_velocity.x = -std::abs(m_velocity.x);
         m_currentFacingDirection = true;
     }
 
     // Flip the sprites
-    if (m_lastFacingDirection != m_currentFacingDirection) {
+    if (m_lastFacingDirection != m_currentFacingDirection)
+    {
         m_walkingSprite.setScale({-1.f * m_walkingSprite.getScale().x, m_walkingSprite.getScale().y});
     }
+    return {0.f, 0.f};
 }
 
-void Enemy::attackingLogic() {
+void Enemy::attackingLogic()
+{
     //TODO
 }
 
-void Enemy::animationLogic(const sf::Time dt) {
+void Enemy::animationLogic(const sf::Time dt)
+{
     walkingAnimation(dt);
 }
 
-void Enemy::walkingAnimation(const sf::Time dt) {
+void Enemy::walkingAnimation(const sf::Time dt)
+{
     m_walking_elapsedTime += dt.asSeconds();
 
     // If enough time has passed, switch to next frame
-    if (m_walking_elapsedTime >= m_walking_animDuration) {
+    if (m_walking_elapsedTime >= m_walking_animDuration)
+    {
         m_walking_elapsedTime = 0.f; // reset timer
         m_walking_currentFrame++; // next frame
 
@@ -94,14 +106,16 @@ void Enemy::walkingAnimation(const sf::Time dt) {
 }
 
 
-void Enemy::draw(sf::RenderTarget &target) const {
+void Enemy::draw(sf::RenderTarget& target) const
+{
     target.draw(m_shape);
     target.draw(m_walkingSprite);
 }
 
 // --- Auxiliary funcs
 
-void Enemy::setColor(const sf::Color colour) {
+void Enemy::setColor(const sf::Color colour)
+{
     m_shape.setFillColor(colour);
 }
 

@@ -20,7 +20,7 @@ public:
 
     void draw(sf::RenderTarget &target) const override;
 
-    void movementLogic(sf::Time dt) override;
+    sf::Vector2f movementLogic(sf::Time dt) override;
 
     void attackingLogic() override;
 
