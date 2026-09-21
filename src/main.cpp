@@ -1,3 +1,11 @@
+// NOTE: World::m_player is a non-owning raw pointer into m_entities. It stays valid while nothing
+// erases entities (vector reallocation moves the unique_ptrs, not the objects they point to), but it
+// dangles the moment entity removal is added. Watch this when Step 9 introduces death handling.
+
+// NOTE: TerrainCollision::resolveMovement caps its sweep at 4 iterations and discards any leftover
+// displacement rather than applying it unchecked, which is the required behaviour. No test in
+// tests/TerrainCollisionTests.cpp exercises the cap actually being reached.
+
 // INFO
 
 // "Code" keyword inside comments means that part of code will be deleted and better implemented in the future. The keyword is used to better group scattered code

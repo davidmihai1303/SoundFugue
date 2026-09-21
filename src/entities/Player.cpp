@@ -5,8 +5,8 @@
 #include "entities/Player.hpp"
 #include <cmath>
 
-Player::Player(const sf::Texture &standingTexture, const sf::Texture &walkingTexture,
-               const sf::Texture &attackingTexture) :
+Player::Player(const sf::Texture& standingTexture, const sf::Texture& walkingTexture,
+               const sf::Texture& attackingTexture) :
     // --- Sprites
     m_standingSprite(standingTexture),
     m_walkingSprite(walkingTexture),
@@ -34,9 +34,8 @@ Player::Player(const sf::Texture &standingTexture, const sf::Texture &walkingTex
     m_attacking_currentFrame(0),
     m_attacking_animDuration(Constants::Player::Animation::AttackingAnimDuration),
     m_attacking_elapsedTime(0.f),
-    m_attacking_numFrames(Constants::Player::Animation::AttackingFrameCount) {
-
-
+    m_attacking_numFrames(Constants::Player::Animation::AttackingFrameCount)
+{
     // Create the player's hitbox
     m_shape.setSize(sf::Vector2f({Constants::Player::HitboxWidth, Constants::Player::HitboxHeight}));
     m_shape.setFillColor(Constants::Player::HitboxColor);
@@ -72,56 +71,95 @@ Player::Player(const sf::Texture &standingTexture, const sf::Texture &walkingTex
     }); // We keep the same x from the standing/walking animation
 }
 
-void Player::update(const sf::Time dt, const TerrainCollision& terrain) {
-    const sf::Vector2f displacement = movementLogic(dt);
-    resolveTerrainMovement(m_shape.getGlobalBounds(), terrain, displacement);
+void Player::update(const sf::Time dt, const TerrainCollision& terrain)
+{
+    const sf::Vector2f displacement = movementLogic(dt, terrain.hasGroundSupport(m_shape.getGlobalBounds()));
+    const TerrainMove moved = resolveTerrainMovement(m_shape.getGlobalBounds(), terrain, displacement);
+
+    if (terrain.hasGroundSupport(m_shape.getGlobalBounds()))
+        m_onGround = true;
+    else
+        m_onGround = false;
+    // Zero out velocity between frames in case of contact.
+    // Only the component pointing into the contacted surface is cleared, so motion
+    // along the surface and motion away from it are preserved.
+    if (moved.contacts.floor && m_velocity.y > 0.f)
+        m_velocity.y = 0.f;
+    if (moved.contacts.ceiling && m_velocity.y < 0.f)
+        m_velocity.y = 0.f;
+    if (moved.contacts.leftWall && m_velocity.x < 0.f)
+        m_velocity.x = 0.f;
+    if (moved.contacts.rightWall && m_velocity.x > 0.f)
+        m_velocity.x = 0.f;
+
     attackingLogic();
     animationLogic(dt);
 
     m_lastFacingDirection = m_currentFacingDirection; // update for next frame
 }
 
-sf::Vector2f Player::movementLogic(const sf::Time dt) {
+sf::Vector2f Player::movementLogic(const sf::Time dt, bool hasGroundSupport)
+{
+    if (hasGroundSupport)
+    {
+        resetDash();
+        m_onGround = true;
+    }
+    else
+        m_onGround = false;
+
     // Left-Right movement
     m_movement = sf::Vector2f(0.f, 0.f);
-    if (!m_isFrozen) {
+    if (!m_isFrozen)
+    {
         // so the player can't move while he's attacking in air
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::A)) {
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::A))
+        {
             m_movement.x -= Constants::Player::MoveSpeed;
             m_currentFacingDirection = false;
             m_isMoving = true;
-        } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::D)) {
+        }
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::D))
+        {
             m_movement.x += Constants::Player::MoveSpeed;
             m_currentFacingDirection = true;
             m_isMoving = true;
-        } else {
+        }
+        else
+        {
             m_shiftFromGround = false;
             m_isMoving = false;
         }
     }
 
     // Jumping logic and gravity
-    if (m_onGround && sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::Space)) {
+    if (m_onGround && sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::Space))
+    {
         m_velocity.y = -Constants::Player::JumpStrength;
         m_onGround = false;
         // Stop attacking only when jump begins
-        if (m_isAttacking) {
+        if (m_isAttacking)
+        {
             m_isAttacking = false;
             m_activeAttackClock.reset();
         }
     }
     if (!m_isFrozen)
-        m_velocity.y += Constants::Physics::Gravity * dt.asSeconds(); // Make sure gravity doesn't stack up while frozen in-air
+        m_velocity.y += Constants::Physics::Gravity * dt.asSeconds();
+    // Make sure gravity doesn't stack up while frozen in-air
 
     // Sprint Logic
-    if (m_inputState.shiftDown) {
+    if (m_inputState.shiftDown)
+    {
         m_movement.x *= Constants::Player::SprintMultiplier;
         if (m_onGround)
             m_shiftFromGround = true;
 
         // Also make the animation move faster
-        m_walking_animDuration = Constants::Player::Animation::WalkingAnimDuration / Constants::Player::SprintMultiplier;
-    } else
+        m_walking_animDuration = Constants::Player::Animation::WalkingAnimDuration /
+            Constants::Player::SprintMultiplier;
+    }
+    else
         m_walking_animDuration = Constants::Player::Animation::WalkingAnimDuration;
 
     if (!m_inputState.shiftDown && m_onGround)
@@ -129,7 +167,8 @@ sf::Vector2f Player::movementLogic(const sf::Time dt) {
 
 
     // Stop moving if attacking
-    if (m_isAttacking && !m_dashAttack) {
+    if (m_isAttacking && !m_dashAttack)
+    {
         if (m_inputState.firstPressed != 's')
             m_movement.x = 0.f;
         else
@@ -137,7 +176,8 @@ sf::Vector2f Player::movementLogic(const sf::Time dt) {
     }
 
     // Smoothen dash attack so it decreases in speed over time
-    if (m_dashAttack) {
+    if (m_dashAttack)
+    {
         // Using this so we don't need exactly 60 frames epr second
         // We want to apply 0.985 roughly 60 times per second
         // Formula: factor ^ (60 * dt)
@@ -146,74 +186,97 @@ sf::Vector2f Player::movementLogic(const sf::Time dt) {
     }
 
     // Flip the sprites
-    if (m_lastFacingDirection != m_currentFacingDirection) {
+    if (m_lastFacingDirection != m_currentFacingDirection)
+    {
         m_standingSprite.setScale({-1.f * m_standingSprite.getScale().x, 1.f});
         m_walkingSprite.setScale({-1.f * m_walkingSprite.getScale().x, 1.f});
         m_attackingSprite.setScale({-1.f * m_attackingSprite.getScale().x, 1.f});
     }
 
+
     return (m_movement + m_velocity) * dt.asSeconds();
 }
 
-void Player::attackingLogic() {
+void Player::attackingLogic()
+{
     // Reset the attack cooldown
     if (m_cooldownAttackClock.getElapsedTime() >= m_cooldownAttackTime)
         m_cooldownAttackClock.reset();
     // Reset the active attack
-    if (m_activeAttackClock.getElapsedTime() >= m_activeAttackTime) {
+    if (m_activeAttackClock.getElapsedTime() >= m_activeAttackTime)
+    {
         m_activeAttackClock.reset();
         m_isAttacking = false;
-        if (m_isFrozen) {
+        if (m_isFrozen)
+        {
             m_velocity = {0.f, 0.f}; // Restore pre-attack motion
             m_isFrozen = false;
         }
         m_dashAttack = false;
     }
 
-    if (m_isAttacking) {
+    if (m_isAttacking)
+    {
         // Stop attacking if changing facing direction
-        if (m_currentFacingDirection != m_lastFacingDirection) {
+        if (m_currentFacingDirection != m_lastFacingDirection)
+        {
             m_isAttacking = false;
             m_activeAttackClock.reset();
         }
     }
 
     // Draw a rectangle representing the hitbox of the Hit-Area
-    attackingShape.setSize(sf::Vector2f({Constants::Player::AttackingHitboxWidth, Constants::Player::AttackingHitboxHeight}));
+    attackingShape.setSize(sf::Vector2f({
+        Constants::Player::AttackingHitboxWidth, Constants::Player::AttackingHitboxHeight
+    }));
     attackingShape.setFillColor(Constants::Player::AttackingHitboxColor);
-    if (m_currentFacingDirection) {
+    if (m_currentFacingDirection)
+    {
         // facing right
         attackingShape.setOrigin({0.f, 0.f}); // Set origin back to default
         attackingShape.setPosition(m_shape.getPosition() + sf::Vector2f(Constants::Player::HitboxWidth, 0.f));
-    } else {
+    }
+    else
+    {
         // facing left
         attackingShape.setOrigin({attackingShape.getLocalBounds().size.x, 0.f}); // Set origin to the top-right corner
         attackingShape.setPosition(m_shape.getPosition());
     }
-    if (m_inputState.hasClicked) {
+    if (m_inputState.hasClicked)
+    {
         attack();
     }
 }
 
-void Player::attack() {
+void Player::attack()
+{
     // if cooldown has passed
-    if (m_cooldownAttackClock.getElapsedTime() == sf::Time::Zero && m_activeAttackClock.getElapsedTime() <= m_activeAttackTime) {
+    // NOTE: the second condition is always true here and guards nothing. attackingLogic() parks
+    // m_activeAttackClock with reset() earlier in the same frame, so by the time attack() runs its
+    // elapsed time is either exactly zero or still below m_activeAttackTime.
+    if (m_cooldownAttackClock.getElapsedTime() == sf::Time::Zero && m_activeAttackClock.getElapsedTime() <=
+        m_activeAttackTime)
+    {
         m_isAttacking = true;
         m_cooldownAttackClock.start();
         // Using restart() to be able to spam-attack
         m_activeAttackClock.restart();
 
-        if (!m_onGround) {
+        if (!m_onGround)
+        {
             // We are already in the air when starting the attack
             m_isFrozen = true;
-            if (m_shiftFromGround && !m_hasDashed) {
+            if (m_shiftFromGround && !m_hasDashed)
+            {
                 m_hasDashed = true;
                 // Running jump - keep moving forward, no A/D control
                 m_dashAttack = true;
                 constexpr float dashSpeed = Constants::Player::DashSpeed;
                 m_velocity.x = m_currentFacingDirection ? dashSpeed : -dashSpeed;
                 m_velocity.y = 0.f;
-            } else {
+            }
+            else
+            {
                 // Neutral jump -> classic freeze in air
                 m_velocity = {0.f, 0.f};
             }
@@ -221,8 +284,10 @@ void Player::attack() {
     }
 }
 
-void Player::animationLogic(const sf::Time dt) {
-    if (m_isAttacking) {
+void Player::animationLogic(const sf::Time dt)
+{
+    if (m_isAttacking)
+    {
         m_animationToDraw = 2; // Tell which sprite to draw
         attackingAnimation(dt); // Animation logic
 
@@ -232,7 +297,9 @@ void Player::animationLogic(const sf::Time dt) {
 
         m_walking_elapsedTime = 0.f;
         m_walking_currentFrame = 0;
-    } else if (!m_isMoving) {
+    }
+    else if (!m_isMoving)
+    {
         m_animationToDraw = 0; // Tell which sprite to draw
         standingAnimation(dt); // Animation logic
 
@@ -242,7 +309,9 @@ void Player::animationLogic(const sf::Time dt) {
 
         m_attacking_elapsedTime = 0.f;
         m_attacking_currentFrame = 0;
-    } else {
+    }
+    else
+    {
         m_animationToDraw = 1; // Tell which sprite to draw
         walkingAnimation(dt); // Animation logic
 
@@ -255,11 +324,13 @@ void Player::animationLogic(const sf::Time dt) {
     }
 }
 
-void Player::standingAnimation(const sf::Time dt) {
+void Player::standingAnimation(const sf::Time dt)
+{
     m_standing_elapsedTime += dt.asSeconds();
 
     // If enough time passed, switch to next frame
-    if (m_standing_elapsedTime >= m_standing_animDuration) {
+    if (m_standing_elapsedTime >= m_standing_animDuration)
+    {
         m_standing_elapsedTime = 0.f; // Reset timer
         m_standing_currentFrame++; // Next frame
 
@@ -285,11 +356,13 @@ void Player::standingAnimation(const sf::Time dt) {
     });
 }
 
-void Player::walkingAnimation(const sf::Time dt) {
+void Player::walkingAnimation(const sf::Time dt)
+{
     m_walking_elapsedTime += dt.asSeconds();
 
     // If enough time has passed, switch to next frame
-    if (m_walking_elapsedTime >= m_walking_animDuration) {
+    if (m_walking_elapsedTime >= m_walking_animDuration)
+    {
         m_walking_elapsedTime = 0.f; // reset timer
         m_walking_currentFrame++; // next frame
 
@@ -310,11 +383,13 @@ void Player::walkingAnimation(const sf::Time dt) {
     });
 }
 
-void Player::attackingAnimation(const sf::Time dt) {
+void Player::attackingAnimation(const sf::Time dt)
+{
     m_attacking_elapsedTime += dt.asSeconds();
 
     // If enough time has passed, switch to next frame
-    if (m_attacking_elapsedTime >= m_attacking_animDuration) {
+    if (m_attacking_elapsedTime >= m_attacking_animDuration)
+    {
         m_attacking_elapsedTime = 0.f; // reset timer
         m_attacking_currentFrame++; // next frame
 
@@ -335,69 +410,72 @@ void Player::attackingAnimation(const sf::Time dt) {
     });
 }
 
-void Player::setPosition(const sf::Vector2f &position) {
+void Player::setPosition(const sf::Vector2f& position)
+{
     m_shape.setPosition(position);
     m_standingSprite.setPosition({
-        m_shape.getPosition().x + Constants::Player::HitboxWidth / 2, m_shape.getPosition().y + Constants::Player::HitboxHeight
+        m_shape.getPosition().x + Constants::Player::HitboxWidth / 2,
+        m_shape.getPosition().y + Constants::Player::HitboxHeight
     });
     m_walkingSprite.setPosition({
-        m_shape.getPosition().x + Constants::Player::HitboxWidth / 2, m_shape.getPosition().y + Constants::Player::HitboxHeight
+        m_shape.getPosition().x + Constants::Player::HitboxWidth / 2,
+        m_shape.getPosition().y + Constants::Player::HitboxHeight
     });
     m_attackingSprite.setPosition({
-        m_shape.getPosition().x + Constants::Player::HitboxWidth / 2, m_shape.getPosition().y + Constants::Player::HitboxHeight
+        m_shape.getPosition().x + Constants::Player::HitboxWidth / 2,
+        m_shape.getPosition().y + Constants::Player::HitboxHeight
     });
 }
 
-void Player::draw(sf::RenderTarget &target) const {
+void Player::draw(sf::RenderTarget& target) const
+{
     target.draw(m_shape);
 
-    if (m_isAttacking) {
+    if (m_isAttacking)
+    {
         target.draw(attackingShape);
     }
 
-    switch (m_animationToDraw) {
-        case 0:
-            target.draw(m_standingSprite);
-            break;
+    switch (m_animationToDraw)
+    {
+    case 0:
+        target.draw(m_standingSprite);
+        break;
 
-        case 1:
-            target.draw(m_walkingSprite);
-            break;
+    case 1:
+        target.draw(m_walkingSprite);
+        break;
 
-        case 2:
-            target.draw(m_attackingSprite);
-            break;
+    case 2:
+        target.draw(m_attackingSprite);
+        break;
 
-        default:
-            throw std::runtime_error("Invalid animation index");
+    default:
+        throw std::runtime_error("Invalid animation index");
     }
 }
 
 
 // ----- Auxiliar funcs
 
-void Player::setInputState(const InputState &inputState) {
+void Player::setInputState(const InputState& inputState)
+{
     m_inputState = inputState;
 }
 
-void Player::setGroundBounds(const sf::FloatRect &groundBounds) {
-    m_groundBounds = groundBounds;
-}
-
 // Code=1
-sf::FloatRect Player::getAttackingBounds() const {
+sf::FloatRect Player::getAttackingBounds() const
+{
     return attackingShape.getGlobalBounds();
 }
 
-void Player::setOnGround(const bool value) {
-    m_onGround = value;
-}
-
-sf::FloatRect Player::getPlayerDimensions() const {
+sf::FloatRect Player::getPlayerDimensions() const
+{
     return m_shape.getLocalBounds();
 }
 
-void Player::resetDash() {
+void Player::resetDash()
+{
     m_hasDashed = false;
 }
 

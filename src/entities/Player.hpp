@@ -20,20 +20,16 @@ public:
 
     void draw(sf::RenderTarget &target) const override;
 
-    sf::Vector2f movementLogic(sf::Time dt) override;
+    sf::Vector2f movementLogic(sf::Time dt, bool hasGroundSupport) override;
 
     void attackingLogic() override;
 
     //TODO ??
     sf::FloatRect getPlayerDimensions() const;
 
-    void setOnGround(bool value);
-
     void attack();
 
     void setInputState(const InputState &inputState);
-
-    void setGroundBounds(const sf::FloatRect &groundBounds);
 
     void resetDash();
 
@@ -51,7 +47,6 @@ private:
     // --------
 
     InputState m_inputState;
-    sf::FloatRect m_groundBounds;
     sf::Vector2f m_movement;
     bool m_onGround;
     sf::Time m_cooldownAttackTime = sf::seconds(Constants::Player::AttackCooldown);

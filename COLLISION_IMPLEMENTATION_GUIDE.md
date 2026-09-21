@@ -141,11 +141,11 @@ Keep David's idea as a possible later optimization: check the stored floor-impac
 - [x] In player movement, calculate input movement, jump/gravity velocity, sprint modifiers, and dash motion before asking the resolver to move the body.
 - [x] Include both `m_movement` and `m_velocity` when calculating displacement. Using velocity alone would omit ordinary keyboard movement.
 - [x] Replace direct shape movement with applying the resolver's corrected position exactly once.
-- [ ] Zero persistent velocity components pointing into contacted surfaces. Preserve motion along the surface and motion away from it.
-- [ ] Set `m_onGround` from final support. Restore dash availability on landing. A ceiling or wall contact must not enable jumping or restore an airborne dash.
-- [ ] During an airborne attack, retain the existing freeze rules. A wall clears horizontal dash velocity while the attack finishes normally.
-- [ ] Make the player update order explicit: calculate intended movement, resolve terrain, apply corrected position and contact responses, run `attackingLogic`, then run `animationLogic`. The existing attack-hitbox positioning block now reads the final body position. Terrain correction must not restart or cancel the attack or reset its animation progress.
-- [ ] Remove the old `collision_player_ground` response and its call. Keep the floor's temporary drawing until the Tiled integration is ready.
+- [x] Zero persistent velocity components pointing into contacted surfaces. Preserve motion along the surface and motion away from it.
+- [x] Set `m_onGround` from final support. Restore dash availability on landing. A ceiling or wall contact must not enable jumping or restore an airborne dash.
+- [x] During an airborne attack, retain the existing freeze rules. A wall clears horizontal dash velocity while the attack finishes normally.
+- [x] Make the player update order explicit: calculate intended movement, resolve terrain, apply corrected position and contact responses, run `attackingLogic`, then run `animationLogic`. The existing attack-hitbox positioning block now reads the final body position. Terrain correction must not restart or cancel the attack or reset its animation progress.
+- [x] Remove the old `collision_player_ground` response and its call. Keep the floor's temporary drawing until the Tiled integration is ready.
 
 **Checkpoint:** Aeris stands, walks, jumps, and lands on the same floor using only the new resolver. During an active attack, the hitbox matches the corrected body position before enemy hit checks. There must never be two terrain correction systems running together.
 

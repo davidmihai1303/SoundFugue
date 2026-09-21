@@ -19,7 +19,7 @@ public:
 
     void draw(sf::RenderTarget &target) const override;
 
-    sf::Vector2f movementLogic(sf::Time dt) override;
+    sf::Vector2f movementLogic(sf::Time dt, bool hasGroundSupport) override;
 
     void attackingLogic() override;
 

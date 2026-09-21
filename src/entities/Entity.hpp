@@ -20,7 +20,7 @@ public:
 
     virtual void draw(sf::RenderTarget &target) const = 0;
 
-    virtual sf::Vector2f movementLogic(sf::Time dt) = 0;
+    virtual sf::Vector2f movementLogic(sf::Time dt, bool hasGroundSupport) = 0;
 
     virtual void attackingLogic() = 0;
 

@@ -5,8 +5,9 @@
 #include "game/World.hpp"
 
 World::World(sf::RenderWindow &window) : m_window(window),
-                                         m_terrain(std::vector{
-                                             sf::FloatRect({-500.f, 550.f}, {6000.f, 50.f})
+                                         m_terrain(std::vector<sf::FloatRect>{
+                                             {{-500.f, 550.f}, {6000.f, 50.f}},
+                                             {{-400.f, 500.f},{50.f, 50.f}},
                                          }),
                                          m_playerStandingTexture("../resources/sprites/aeris_standing_animation_spritesheet.png"),
                                          m_playerWalkingTexture("../resources/sprites/aeris_walking_animation_spritesheet.png"),
@@ -51,7 +52,6 @@ void World::update(const sf::Time dt, const InputState &inputState) {
 
     if (m_player) {
         (*m_player).setInputState(inputState);
-        (*m_player).setGroundBounds(m_ground.getGlobalBounds());
     }
 
     for (const auto &e: m_entities)

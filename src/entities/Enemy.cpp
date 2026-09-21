@@ -36,14 +36,14 @@ Enemy::Enemy(const sf::Vector2f& position, const sf::Vector2f& size,
 
 void Enemy::update(const sf::Time dt, const TerrainCollision& terrain)
 {
-    movementLogic(dt);
+    movementLogic(dt, 1);
     animationLogic(dt);
 
     m_lastFacingDirection = m_currentFacingDirection; // update for next frame
 }
 
 
-sf::Vector2f Enemy::movementLogic(const sf::Time dt)
+sf::Vector2f Enemy::movementLogic(const sf::Time dt, bool hasGroundSupport)
 {
     m_shape.move(m_velocity * dt.asSeconds());
 
