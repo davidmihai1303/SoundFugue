@@ -8,12 +8,11 @@
 #include "game/Constants.hpp"
 #include <tmxlite/Map.hpp>
 
-Game::Game() : m_window(sf::VideoMode({1920, 1080}), "SoundFugue"),
-               m_view({Constants::Window::ViewCenterX, Constants::Window::ViewCenterY}, {
-                          Constants::Window::Width, Constants::Window::Height
-                      }),
-               m_world(m_window) {
-}
+Game::Game()
+    : m_window(sf::VideoMode({1920, 1080}), "SoundFugue"),
+      m_view({Constants::Window::ViewCenterX, Constants::Window::ViewCenterY},
+             {Constants::Window::Width, Constants::Window::Height}),
+      m_world(m_window) {}
 
 void Game::run() {
     m_window.setFramerateLimit(Constants::FrameRateLimit);
@@ -21,7 +20,7 @@ void Game::run() {
     m_window.setView(m_view);
     sf::Clock clock;
 
-    sf::Clock fpsTimer; // Renamed 'aux' to be clearer
+    sf::Clock fpsTimer;   // Renamed 'aux' to be clearer
     int frameCounter = 0; // NEW: Count frames manually    clock.restart();
 
     while (m_window.isOpen()) {
@@ -54,32 +53,31 @@ void Game::run() {
     }
 }
 
-
 void Game::processEvents() {
     m_inputState.hasClicked = false;
     while (auto event = m_window.pollEvent()) {
         if (event->is<sf::Event::Closed>()) {
             m_window.close();
-        } else if (auto *resize = event->getIf<sf::Event::Resized>()) {
+        } else if (auto* resize = event->getIf<sf::Event::Resized>()) {
             updateView(static_cast<float>(resize->size.x), static_cast<float>(resize->size.y));
-        } else if (auto *button = event->getIf<sf::Event::MouseButtonPressed>()) {
+        } else if (auto* button = event->getIf<sf::Event::MouseButtonPressed>()) {
             if (button->button == sf::Mouse::Button::Left) {
                 m_inputState.clickDown = true;
                 m_inputState.hasClicked = true;
                 if (m_inputState.shiftDown && m_inputState.firstPressed == '0')
                     m_inputState.firstPressed = 's';
             }
-        } else if (auto *key = event->getIf<sf::Event::KeyPressed>()) {
+        } else if (auto* key = event->getIf<sf::Event::KeyPressed>()) {
             if (key->scancode == sf::Keyboard::Scan::LShift) {
                 m_inputState.shiftDown = true;
                 // if mouse already down, mouse came first
                 if (m_inputState.clickDown && m_inputState.firstPressed == '0')
                     m_inputState.firstPressed = 'c';
             }
-        } else if (auto *keyReleased = event->getIf<sf::Event::KeyReleased>()) {
+        } else if (auto* keyReleased = event->getIf<sf::Event::KeyReleased>()) {
             if (keyReleased->scancode == sf::Keyboard::Scan::LShift)
                 m_inputState.shiftDown = false;
-        } else if (auto *buttonReleased = event->getIf<sf::Event::MouseButtonReleased>())
+        } else if (auto* buttonReleased = event->getIf<sf::Event::MouseButtonReleased>())
             if (buttonReleased->button == sf::Mouse::Button::Left)
                 m_inputState.clickDown = false;
     }

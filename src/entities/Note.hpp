@@ -22,13 +22,12 @@ public:
     // Destructor
     ~Note();
 
-    void draw(sf::RenderTarget &target) const;
+    void draw(sf::RenderTarget& target) const;
 
     sf::FloatRect getBounds() const;
 
 private:
     sf::RectangleShape m_shape;
 };
-
 
 #endif //SOUNDFUGUE_NOTE_HPP

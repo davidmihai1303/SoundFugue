@@ -4,12 +4,11 @@
 
 #include "entities/Note.hpp"
 
-Note::Note(const sf::Vector2f &position){
+Note::Note(const sf::Vector2f& position) {
     m_shape.setSize(sf::Vector2f(20.f, 20.f));
     m_shape.setFillColor(sf::Color::Yellow);
     m_shape.setPosition(position);
 }
-
 
 // Constructor de copiere
 Note::Note(const Note& other) : m_shape(other.m_shape) {
@@ -25,10 +24,9 @@ Note& Note::operator=(const Note& other) {
 }
 
 // Destructor
-Note::~Note() {
-}
+Note::~Note() {}
 
-void Note::draw(sf::RenderTarget &target) const{
+void Note::draw(sf::RenderTarget& target) const {
     target.draw(m_shape);
 }
 
@@ -37,8 +35,8 @@ sf::FloatRect Note::getBounds() const {
 }
 
 // std::ostream& operator<<(std::ostream& os, const Note& n) {
-     // const sf::FloatRect bounds = n.getBounds();
-     // os << "Note(size: " << bounds.size.x << "x" << bounds.size.y
-     //    << ", pos: " << bounds.position.x << ", " << bounds.position.y << ")";
+// const sf::FloatRect bounds = n.getBounds();
+// os << "Note(size: " << bounds.size.x << "x" << bounds.size.y
+//    << ", pos: " << bounds.position.x << ", " << bounds.position.y << ")";
 //     return os;
 // }

@@ -1,0 +1,19 @@
+  # clang-format configuration for SoundFugue.
+#
+# CLion applies this only when ClangFormat is enabled:
+#   Settings -> Editor -> Code Style -> Enable ClangFormat
+# Without that, CLion keeps using its own code-style settings and the two will disagree.
+
+BasedOnStyle: LLVM
+
+# --- deliberate differences from LLVM's defaults ---
+BreakBeforeBraces: Attach     # opening brace on the same line
+IndentWidth: 4                # LLVM uses 2; every indented line in src/ uses 4
+ColumnLimit: 120              # LLVM uses 80
+AccessModifierOffset: -4      # public: / private: sit flush with the class keyword
+PointerAlignment: Left        # const sf::Vector2f& position
+
+# --- conservative choices for a codebase that has never been auto-formatted ---
+AllowShortFunctionsOnASingleLine: Empty   # LLVM would collapse one-statement bodies onto one line
+ReflowComments: false                     # preserves the long single-line comments in Enemy.hpp
+SortIncludes: false                       # include order in this project is hand-chosen

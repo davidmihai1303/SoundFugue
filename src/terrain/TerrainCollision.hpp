@@ -20,7 +20,7 @@ public:
     [[nodiscard]] const std::vector<sf::FloatRect>& getSolids() const;
     // We need to know if the final position is supported by a solid
     [[nodiscard]] bool hasGroundSupport(const sf::FloatRect& bodyBounds) const;
-    
+
 private:
     // The range of normalized movement times during which the body's span has positive overlap with a solid's span on one axis. Time 0 is the start and time 1 is the requested end.
     struct AxisInterval {
@@ -29,7 +29,8 @@ private:
     };
 
     // Returns the overlap interval for one axis, or no value when no interval exists.
-    static std::optional<AxisInterval> calculateAxisInterval(float bodyMin, float bodyMax, float solidMin, float solidMax, float displacement);
+    static std::optional<AxisInterval> calculateAxisInterval(float bodyMin, float bodyMax, float solidMin,
+                                                             float solidMax, float displacement);
 
     // Collision rectangles that make up the solid terrain in world pixels.
     std::vector<sf::FloatRect> m_solids;

@@ -22,7 +22,7 @@ class World {
 public:
     friend std::ostream& operator<<(std::ostream& os, const World& w);
 
-    explicit World(sf::RenderWindow &window);
+    explicit World(sf::RenderWindow& window);
 
     void update(sf::Time dt, const InputState& inputState);
 
@@ -35,11 +35,11 @@ public:
 private:
     void handleCollisions();
 
-    void collision_player_enemies(const sf::FloatRect &playerBounds);
+    void collision_player_enemies(const sf::FloatRect& playerBounds);
 
-    void collision_player_notes(const sf::FloatRect &playerBounds);
+    void collision_player_notes(const sf::FloatRect& playerBounds);
 
-    sf::RenderWindow &m_window;
+    sf::RenderWindow& m_window;
 
     sf::RectangleShape m_ground;
 
@@ -47,17 +47,15 @@ private:
     // Tiled-based loading replaces it (Step 10/11 of the collision guide).
     TerrainCollision m_terrain;
 
-    std::vector<std::unique_ptr<Entity> > m_entities;
+    std::vector<std::unique_ptr<Entity>> m_entities;
 
-    Player *m_player = nullptr;
+    Player* m_player = nullptr;
 
-    std::vector<std::unique_ptr<Note> > m_notes;
+    std::vector<std::unique_ptr<Note>> m_notes;
 
     // Code=2
-    std::vector<sf::Vector2f> positions = {
-        {100, 300}, {200, 350}, {300, 380}, {400, 320}, {500, 310},
-        {600, 340}, {700, 360}, {800, 300}, {900, 330}, {1000, 350}
-    };
+    std::vector<sf::Vector2f> positions = {{100, 300}, {200, 350}, {300, 380}, {400, 320}, {500, 310},
+                                           {600, 340}, {700, 360}, {800, 300}, {900, 330}, {1000, 350}};
 
     // --- Player textures:
 
@@ -66,7 +64,6 @@ private:
     TextureHolder m_playerAttackingTexture;
 
     // -----------
-
 
     // --- Enemy textures:
 
@@ -81,9 +78,7 @@ private:
     std::vector<std::unique_ptr<MapLayer>> m_mapLayers; // Holds the visual geometry
     // ----------
 
-
     void addNotes();
-
 };
 
 #endif //SOUNDFUGUE_WORLD_HPP

@@ -16,9 +16,9 @@ public:
 
     virtual ~Entity() = default;
 
-    virtual void update(sf::Time dt, const TerrainCollision &terrain) = 0;
+    virtual void update(sf::Time dt, const TerrainCollision& terrain) = 0;
 
-    virtual void draw(sf::RenderTarget &target) const = 0;
+    virtual void draw(sf::RenderTarget& target) const = 0;
 
     virtual sf::Vector2f movementLogic(sf::Time dt, bool hasGroundSupport) = 0;
 
@@ -28,13 +28,13 @@ public:
 
     [[nodiscard]] sf::Vector2f getPosition() const;
 
-    virtual void setPosition(const sf::Vector2f &position);
+    virtual void setPosition(const sf::Vector2f& position);
 
     [[nodiscard]] bool getAttackingState() const;
 
     [[nodiscard]] sf::Vector2f getVelocity() const;
 
-    void setVelocity(const sf::Vector2f &velocity);
+    void setVelocity(const sf::Vector2f& velocity);
 
 protected:
     sf::RectangleShape m_shape;
@@ -55,8 +55,8 @@ protected:
     bool m_currentFacingDirection;
     bool m_lastFacingDirection;
 
-    TerrainMove resolveTerrainMovement(const sf::FloatRect& body, const TerrainCollision& terrain, const sf::Vector2f& displacement);
+    TerrainMove resolveTerrainMovement(const sf::FloatRect& body, const TerrainCollision& terrain,
+                                       const sf::Vector2f& displacement);
 };
-
 
 #endif //SOUNDFUGUE_ENTITY_HPP

@@ -27,5 +27,4 @@ private:
     InputState m_inputState;
 };
 
-
 #endif //SOUNDFUGUE_GAME_HPP

@@ -5,16 +5,14 @@
 #include "entities/Enemy.hpp"
 #include "game/Constants.hpp"
 
-Enemy::Enemy(const sf::Vector2f& position, const sf::Vector2f& size)
-{
+Enemy::Enemy(const sf::Vector2f& position, const sf::Vector2f& size) {
     m_shape.setSize(size);
     m_shape.setPosition(position);
     m_currentFacingDirection = false;
     m_lastFacingDirection = false;
 }
 
-void Enemy::update(const sf::Time dt, const TerrainCollision& terrain)
-{
+void Enemy::update(const sf::Time dt, const TerrainCollision& terrain) {
     m_velocity.y += Constants::Physics::Gravity * dt.asSeconds();
     const sf::Vector2f displacement = movementLogic(dt, terrain.hasGroundSupport(m_shape.getGlobalBounds()));
     const TerrainMove moved = resolveTerrainMovement(m_shape.getGlobalBounds(), terrain, displacement);
@@ -38,15 +36,13 @@ void Enemy::update(const sf::Time dt, const TerrainCollision& terrain)
     contactLogic(moved.contacts);
 }
 
-void Enemy::attackingLogic()
-{
+void Enemy::attackingLogic() {
     //TODO
 }
 
 // --- Auxiliary funcs
 
-void Enemy::setColor(const sf::Color colour)
-{
+void Enemy::setColor(const sf::Color colour) {
     m_shape.setFillColor(colour);
 }
 

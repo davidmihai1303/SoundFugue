@@ -12,8 +12,8 @@
 
 class MapLayer final : public sf::Drawable, public sf::Transformable {
 public:
-    MapLayer(const tmx::Map &map, const std::size_t layerIdx) {
-        const std::vector<tmx::Layer::Ptr> &layers = map.getLayers();
+    MapLayer(const tmx::Map& map, const std::size_t layerIdx) {
+        const std::vector<tmx::Layer::Ptr>& layers = map.getLayers();
         if (map.getOrientation() != tmx::Orientation::Orthogonal) {
             std::cout << "Map is not orthogonal!" << std::endl;
             return;
@@ -31,7 +31,7 @@ public:
 
         m_animTiles = map.getAnimatedTiles();
 
-        const tmx::TileLayer &layer = layers[layerIdx]->getLayerAs<tmx::TileLayer>();
+        const tmx::TileLayer& layer = layers[layerIdx]->getLayerAs<tmx::TileLayer>();
 
         // 1. Copy the raw tile IDs into our own memory so we can change them later
         m_tileIDs = layer.getTiles();
@@ -45,7 +45,8 @@ public:
 
     // Change a tile dynamically during gameplay
     void setTile(std::uint32_t x, std::uint32_t y, tmx::TileLayer::Tile newTile) {
-        if (x >= m_mapSize.x || y >= m_mapSize.y) return;
+        if (x >= m_mapSize.x || y >= m_mapSize.y)
+            return;
 
         const std::size_t idx = y * m_mapSize.x + x;
         m_tileIDs[idx] = newTile;
@@ -59,7 +60,7 @@ public:
     void update(sf::Time elapsed) {
         bool geometryNeedsUpdate = false;
 
-        for (auto &anim: m_activeAnimations) {
+        for (auto& anim : m_activeAnimations) {
             anim.currentTime += elapsed;
             std::int32_t animTime = 0;
             auto frame = anim.animTile.animation.frames.begin();
@@ -103,13 +104,13 @@ private:
         sf::Vector2u texTileSize;
         sf::Vector2u texTileCount;
 
-        void draw(sf::RenderTarget &rt, sf::RenderStates states) const override {
+        void draw(sf::RenderTarget& rt, sf::RenderStates states) const override {
             states.texture = texture.get();
             rt.draw(vertices.data(), vertices.size(), sf::PrimitiveType::Triangles, states);
         }
     };
 
-    std::vector<std::unique_ptr<TextureLayer> > m_textureLayers;
+    std::vector<std::unique_ptr<TextureLayer>> m_textureLayers;
 
     struct AnimationState {
         std::size_t mapIndex;
@@ -120,9 +121,10 @@ private:
     std::vector<AnimationState> m_activeAnimations;
 
     // --- SETUP TEXTURES ---
-    void setupTilesets(const std::vector<tmx::Tileset> &tilesets) {
-        for (const tmx::Tileset &ts: tilesets) {
-            if (ts.getImagePath().empty()) continue;
+    void setupTilesets(const std::vector<tmx::Tileset>& tilesets) {
+        for (const tmx::Tileset& ts : tilesets) {
+            if (ts.getImagePath().empty())
+                continue;
 
             std::unique_ptr<TextureLayer> layer = std::make_unique<TextureLayer>();
 
@@ -154,7 +156,7 @@ private:
         m_activeAnimations.clear();
 
         // 1. Clear the old geometry
-        for (const std::unique_ptr<TextureLayer> &layer: m_textureLayers)
+        for (const std::unique_ptr<TextureLayer>& layer : m_textureLayers)
             layer->vertices.clear();
 
         // 2. Loop through every single tile on the map
@@ -163,10 +165,11 @@ private:
                 const std::size_t idx = y * m_mapSize.x + x;
                 std::uint32_t tileID = m_tileIDs[idx].ID;
 
-                if (tileID == 0) continue; // Skip empty tiles
+                if (tileID == 0)
+                    continue; // Skip empty tiles
 
                 // 3. Find which texture this tile belongs to
-                for (const std::unique_ptr<TextureLayer> &layer: m_textureLayers) {
+                for (const std::unique_ptr<TextureLayer>& layer : m_textureLayers) {
                     if (tileID >= layer->firstGID && tileID <= layer->lastGID) {
                         // Check if it's an animated tile
                         if (m_animTiles.find(tileID) != m_animTiles.end()) {
@@ -189,26 +192,23 @@ private:
                         sf::Vertex v[6];
                         v[0] = sf::Vertex{pos, sf::Color::White, sf::Vector2f(texX, texY)};
 
-                        v[1] = sf::Vertex{pos + sf::Vector2f(texW, 0.f),
-                                          sf::Color::White,
+                        v[1] = sf::Vertex{pos + sf::Vector2f(texW, 0.f), sf::Color::White,
                                           sf::Vector2f(texX + texW, texY)};
 
-                        v[2] = sf::Vertex{pos + sf::Vector2f(texW, texH),
-                                          sf::Color::White,
+                        v[2] = sf::Vertex{pos + sf::Vector2f(texW, texH), sf::Color::White,
                                           sf::Vector2f(texX + texW, texY + texH)};
 
                         v[3] = v[0];
                         v[4] = v[2];
 
-                        v[5] = sf::Vertex{pos + sf::Vector2f(0.f, texH),
-                                          sf::Color::White,
+                        v[5] = sf::Vertex{pos + sf::Vector2f(0.f, texH), sf::Color::White,
                                           sf::Vector2f(texX, texY + texH)};
 
                         // Apply standard Tiled flip math
                         applyFlips(m_tileIDs[idx].flipFlags, v);
 
                         // Push them into the layer
-                        for (const sf::Vertex & i : v) {
+                        for (const sf::Vertex& i : v) {
                             layer->vertices.push_back(i);
                         }
                         break; // Stop searching layers once we found a match
@@ -219,7 +219,8 @@ private:
     }
 
     static void applyFlips(const std::uint8_t flags, sf::Vertex v[6]) {
-        if (flags == 0) return;
+        if (flags == 0)
+            return;
 
         // Horizonal Flip
         if (flags & tmx::TileLayer::FlipFlag::Horizontal) {
@@ -244,9 +245,9 @@ private:
         }
     }
 
-    void draw(sf::RenderTarget &rt, sf::RenderStates states) const override {
+    void draw(sf::RenderTarget& rt, sf::RenderStates states) const override {
         states.transform *= getTransform();
-        for (const auto &layer: m_textureLayers) {
+        for (const auto& layer : m_textureLayers) {
             rt.draw(*layer, states);
         }
     }

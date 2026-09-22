@@ -14,11 +14,12 @@ class Player final : public Entity {
 public:
     friend std::ostream& operator<<(std::ostream& os, const Player& p);
 
-    explicit Player(const sf::Texture& standingTexture, const sf::Texture& walkingTexture, const sf::Texture& attackingTexture);
+    explicit Player(const sf::Texture& standingTexture, const sf::Texture& walkingTexture,
+                    const sf::Texture& attackingTexture);
 
     void update(sf::Time dt, const TerrainCollision& terrain) override;
 
-    void draw(sf::RenderTarget &target) const override;
+    void draw(sf::RenderTarget& target) const override;
 
     sf::Vector2f movementLogic(sf::Time dt, bool hasGroundSupport) override;
 
@@ -29,15 +30,14 @@ public:
 
     void attack();
 
-    void setInputState(const InputState &inputState);
+    void setInputState(const InputState& inputState);
 
     void resetDash();
 
-    void setPosition(const sf::Vector2f &position) override;
+    void setPosition(const sf::Vector2f& position) override;
 
     // Code=1
     sf::FloatRect getAttackingBounds() const;
-
 
 private:
     // --- Sprites
@@ -56,14 +56,14 @@ private:
     // Attacking in-air helpers
     bool m_isFrozen;
 
-    bool m_shiftFromGround;    // If you pressed Shift while you were on ground
+    bool m_shiftFromGround; // If you pressed Shift while you were on ground
     // We need this variable to tell whether the jump was while moving or while running, regardless of pressing Shift in-air
 
     bool m_dashAttack;
     bool m_hasDashed;
 
     // --- Animation Variables ---
-    unsigned int m_animationToDraw;     // What animation to draw on screen: 0 - standing, 1 - walking, 2 - attack
+    unsigned int m_animationToDraw; // What animation to draw on screen: 0 - standing, 1 - walking, 2 - attack
 
     int m_standing_currentFrame;       // Current frame index (starting from 0)
     float m_standing_animDuration;     // How long one frame stays on screen (in seconds)
@@ -89,6 +89,5 @@ private:
     void walkingAnimation(sf::Time dt);
     void attackingAnimation(sf::Time dt);
 };
-
 
 #endif //SOUNDFUGUE_PLAYER_HPP
