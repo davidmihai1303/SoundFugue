@@ -23,8 +23,6 @@
 
 //TODO throw errors if player is not found inside the World class
 
-//TODO create a clock for the isOnGround variable in the Player class. The player can now dash while being on ground in between his collision checking
-
 #include "game/Game.hpp"
 
 int main() {

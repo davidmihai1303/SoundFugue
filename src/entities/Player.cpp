@@ -73,9 +73,21 @@ Player::Player(const sf::Texture& standingTexture, const sf::Texture& walkingTex
 
 void Player::update(const sf::Time dt, const TerrainCollision& terrain)
 {
+    // Ground support is deliberately queried on both sides of the movement.
+    // Before: movementLogic gates the jump on it, so it has to describe where she stands right
+    // now. This is also what catches a respawn teleport, which World::handleCollisions performs
+    // after the previous update() has already returned.
     const sf::Vector2f displacement = movementLogic(dt, terrain.hasGroundSupport(m_shape.getGlobalBounds()));
     const TerrainMove moved = resolveTerrainMovement(m_shape.getGlobalBounds(), terrain, displacement);
 
+    // After: attackingLogic() below has to see the ground state she ended this frame in, or
+    // attacking on the exact frame she lands or steps off a ledge takes the wrong branch in
+    // attack(). The shape already holds the resolved position here, because
+    // resolveTerrainMovement applied it before returning.
+    // This asks the terrain about her final position rather than reading moved.contacts.floor:
+    // a floor contact only means she met a floor at some point during the sweep, which is not the
+    // same as standing on one afterwards. See the "land then slide off ledge" case in
+    // tests/TerrainCollisionTests.cpp.
     if (terrain.hasGroundSupport(m_shape.getGlobalBounds()))
         m_onGround = true;
     else
@@ -100,6 +112,7 @@ void Player::update(const sf::Time dt, const TerrainCollision& terrain)
 
 sf::Vector2f Player::movementLogic(const sf::Time dt, bool hasGroundSupport)
 {
+    // Support measured before this frame's movement; see the note in Player::update.
     if (hasGroundSupport)
     {
         resetDash();

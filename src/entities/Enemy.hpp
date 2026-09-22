@@ -9,37 +9,24 @@
 #include "entities/Entity.hpp"
 #include "terrain/TerrainCollision.hpp"
 
+// Shared base for every regular enemy. It owns the order a frame runs in; each concrete enemy supplies its own intended movement and its own animations. Abstract: movementLogic() and draw() stay pure virtual from Entity, and animationLogic() is added below.
 class Enemy : public Entity {
 public:
     friend std::ostream& operator<<(std::ostream& os, const Enemy& e);
 
-    Enemy(const sf::Vector2f &position, const sf::Vector2f &size, const sf::Texture &walkingTexture);
-
+    // The frame order every enemy shares: decide intended movement, advance animations, then record this frame's facing for the next one.
     void update(sf::Time dt, const TerrainCollision& terrain) override;
-
-    void draw(sf::RenderTarget &target) const override;
-
-    sf::Vector2f movementLogic(sf::Time dt, bool hasGroundSupport) override;
 
     void attackingLogic() override;
 
     void setColor(sf::Color colour);
 
+protected:
+    // Only derived enemies construct one. Enemy has no movement or animations of its own, so it sets up just the physical body and the facing bookkeeping.
+    Enemy(const sf::Vector2f& position, const sf::Vector2f& size);
 
-private:
-    float m_leftLimit;
-    float m_rightLimit;
-
-    sf::Sprite m_walkingSprite;
-
-    int m_walking_currentFrame;
-    float m_walking_animDuration;
-    float m_walking_elapsedTime;
-    sf::Vector2u m_walking_frameSize;
-    int m_walking_numFrames;
-
-    void animationLogic(sf::Time dt);
-    void walkingAnimation(sf::Time dt);
+    // Each enemy owns its own sprites and animation timers, so each selects and advances its own.
+    virtual void animationLogic(sf::Time dt) = 0;
 };
 
 #endif //SOUNDFUGUE_ENEMY_HPP

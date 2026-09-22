@@ -27,7 +27,8 @@ The current variable frame time and its 0.05-second cap stay in place. We will u
 | `TerrainCollision` — new | Store terrain rectangles and resolve a body's requested movement. |
 | `TerrainMapLoader` — new | Convert supported TMX collision objects into terrain rectangles. |
 | `World` | Own the terrain, supply it to actors, and coordinate gameplay interactions. |
-| `Player` and `Enemy` | Decide intended movement and respond to terrain contacts. |
+| `Player` and the concrete enemies (`Spider`, ...) | Decide intended movement and respond to terrain contacts. |
+| `Enemy` | Shared abstract base for the concrete enemies; owns the per-frame order they all run in. |
 | `Entity` | Provide the shared body and movement interface. |
 | `MapLayer` | Continue rendering tile layers. |
 
@@ -151,7 +152,7 @@ Keep David's idea as a possible later optimization: check the stored floor-impac
 
 ## Step 8 — Connect spiders to the same resolver
 
-**Edit:** `src/Enemy.hpp` and `src/Enemy.cpp`.
+**Edit:** `src/entities/Enemy.hpp` / `.cpp` (the shared base) and `src/entities/enemies/Spider.hpp` / `.cpp` (the concrete spider). `Enemy` was split into a base plus concrete enemies before this step, so the work now lands in both: what every enemy shares -- gravity, the terrain sweep, and the velocity responses to floor and ceiling contacts -- belongs in `Enemy::update`, while the patrol displacement, its clamp, and turning around belong in `Spider`. Reversing on a wall contact needs both, since the contact is known in `Enemy` and the reaction is `Spider`'s.
 
 - [ ] Apply the existing gravity constant to vertical velocity.
 - [ ] Calculate horizontal patrol displacement and limit the requested destination to the current patrol interval, accounting for body width.

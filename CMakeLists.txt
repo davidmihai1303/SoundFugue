@@ -122,6 +122,8 @@ add_executable(${MAIN_EXECUTABLE_NAME}
         src/entities/Player.hpp
         src/entities/Enemy.cpp
         src/entities/Enemy.hpp
+        src/entities/enemies/Spider.cpp
+        src/entities/enemies/Spider.hpp
         src/entities/Entity.cpp
         src/entities/Entity.hpp
         src/entities/Note.cpp

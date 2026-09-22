@@ -36,9 +36,13 @@ src/game/
   Game.cpp/hpp           Owns the window and the frame loop: poll events -> World::update
                           -> update camera -> World::draw. Also builds InputState from raw
                           SFML events each frame.
-  World.cpp/hpp           Owns all entities, the (currently hardcoded) ground rectangle, the
-                          Tiled map layers, and the notes. Coordinates gameplay-level
-                          interactions (enemy contact, note pickup) after entities update.
+  World.cpp/hpp           Owns all entities, the TerrainCollision instance, the drawn ground
+                          rectangle, the Tiled map layers, and the notes. Passes the terrain
+                          into every entity update, then coordinates gameplay-level
+                          interactions (enemy contact, note pickup). m_terrain is still built
+                          by hand in the constructor and holds TWO solids: the floor at
+                          (-500, 550) sized 6000x50, which m_ground draws, and a 50x50 block
+                          at (-400, 500) that nothing draws. Tiled supplies terrain at Step 11.
   InputState.hpp          Plain struct describing one frame's raw input (click/shift state,
                           click ordering for dash detection).
   Constants.hpp            All tunable numeric constants (movement, combat, animation,
@@ -49,21 +53,40 @@ src/entities/
                           (sf::RectangleShape) — there is no separate cached position
                           variable; getPosition() reads m_shape directly. Declares the
                           update/draw/movementLogic/attackingLogic contract every actor
-                          implements.
+                          implements; update() and movementLogic() now carry the terrain
+                          reference and the pre-move ground-support flag. Provides
+                          resolveTerrainMovement(), the single place where a resolved
+                          position is applied to a shape.
   Player.cpp/hpp          Aeris: movement, gravity, jump, dash, sprint, attack state
-                          machine, animation selection. Ground correction currently lives
-                          here (groundCollisionLogic(), run between movementLogic and
-                          attackingLogic) using the hardcoded floor World hands it each
-                          frame via setGroundBounds() — see Section 5.
-  Enemy.cpp/hpp           Spiders: horizontal patrol between two X limits. No gravity, no
-                          terrain collision yet.
+                          machine, animation selection. Terrain is resolved inside update(),
+                          in this order: movementLogic() returns the requested displacement
+                          -> Entity::resolveTerrainMovement() sweeps it and applies the
+                          corrected position -> m_onGround is set from a fresh
+                          hasGroundSupport() on the final bounds -> velocity components
+                          pointing into a contacted surface are cleared -> attackingLogic()
+                          -> animationLogic(). Ground support is deliberately queried on both
+                          sides of the movement; the comments in update() say why.
+  Enemy.cpp/hpp           Abstract shared base for every regular enemy. Owns update(), the frame
+                          order all enemies run: movementLogic() -> animationLogic() -> record
+                          facing. Adds a protected pure-virtual animationLogic(); movementLogic()
+                          and draw() stay pure virtual from Entity, so Enemy can't be
+                          instantiated. Also holds attackingLogic() (a //TODO no-op) and
+                          setColor(). Its constructor is protected and takes (position, size).
+                          update() receives the terrain and ignores it for now — Step 8 puts the
+                          sweep and the shared contact responses here, once, for every enemy.
+  enemies/Spider.*        The only concrete enemy today (Spider final : public Enemy). Owns the
+                          patrol limits, the walking sprite and its animation, movementLogic()
+                          and draw(). Still moves m_shape directly and clamps after moving, and
+                          has no gravity — Step 8 replaces that; KNOWN_ISSUES.md #5 has the
+                          specifics. The remaining 4-7 enemies join it in src/entities/enemies/.
   Note.cpp/hpp            Collectible pickups.
 
-src/terrain/               A standalone, fully-tested swept-AABB collision resolver. NOT
-  TerrainCollision.*        currently connected to Player, Enemy, or World — it only exists
-  TerrainContacts.hpp       and is exercised inside tests/TerrainCollisionTests.cpp today.
-  TerrainMove.hpp           See Section 5 for exactly what it can do and what's missing
-                            before it's wired in.
+src/terrain/               A fully-tested swept-AABB collision resolver with no dependency on
+  TerrainCollision.*        Tiled, textures, input or any actor class. It now drives Player
+  TerrainContacts.hpp       through Entity::resolveTerrainMovement(); Enemy still bypasses it
+  TerrainMove.hpp           (Step 8). Its rectangles are still supplied by hand in World's
+                            constructor — TerrainMapLoader does not exist yet (Step 10).
+                            See Section 5.
 
 src/graphics/
   TextureHolder.*          RAII texture-loading helper.
@@ -105,25 +128,31 @@ The game loads resources via relative paths (`"../resources/..."`), so run the `
 
 ---
 
-## 4. The three root-level docs — what each one is for
+## 4. The four root-level docs — what each one is for
 
 | File | Role | Tense / content rule |
 | --- | --- | --- |
 | `COLLISION_ENGINE_DEVELOPMENT_DRAFT.md` | Narrative history of the terrain resolver: how it works, why each piece exists, mistakes made and fixed. | Past/present tense only — describes exclusively what is already implemented and tested. Deliberately excludes future/planned work; update it once a step is actually finished, never before. |
 | `COLLISION_IMPLEMENTATION_GUIDE.md` | The authoritative forward checklist for connecting the resolver to the game (Steps 1–12, checkbox per sub-item). | This is "what's next" — follow it one step at a time, in order, and don't tick boxes that haven't actually been done. |
+| `KNOWN_ISSUES.md` | Bugs found while auditing Step 7 and deliberately left unfixed. Each entry records the mechanism, how to trigger it, what the player sees, and which guide step owns the fix. Also records two things that were checked and found sound, so they aren't re-investigated. | A register of accepted debt, not a task list. Don't fix an entry as a side errand — it belongs to its owning step, and fixing issues 1–4 piecemeal before Step 9 risks writing the same cleanup twice. Add to it when an audit finds something out of scope. |
 | `MOUSE_INPUT_DIAGNOSTICS.md` | An open, unresolved investigation into intermittent mouse-click/attack failures. | Diagnostic protocol only — no fix has been applied yet and no root cause is confirmed. Follow its procedure to gather evidence rather than guessing at a fix. |
 
-Both `COLLISION_ENGINE_DEVELOPMENT_DRAFT.md` and `COLLISION_IMPLEMENTATION_GUIDE.md` are currently untracked in git — they're David's working drafts, not yet committed. Don't commit them, or anything else, without being asked (Rule 5).
+`COLLISION_ENGINE_DEVELOPMENT_DRAFT.md` and `KNOWN_ISSUES.md` are untracked: they're listed in `.git/info/exclude`, so they never appear as untracked files in `git status` either. `COLLISION_IMPLEMENTATION_GUIDE.md` is committed (`cac7405`), so its checkbox state is part of the history and shows up in diffs. Don't commit anything without being asked (Rule 5).
 
 ---
 
 ## 5. Current implementation status (verify before trusting — see Rule 6)
 
-As of the last work in this repo:
+As of `3d27c0d collision engine work 7 done` (21 September 2026):
 
-- **Terrain resolver (`src/terrain/`)**: Steps 1–5 of the implementation guide are complete. `TerrainCollision::resolveMovement()` does swept AABB collision with repeated sweeping for sliding (capped at 4 iterations), merges simultaneous multi-solid impacts independent of storage order, separates face vs. corner contacts to avoid false hits at terrain seams, uses a documented floating-point tolerance, and `hasGroundSupport()` answers final ground support as an independent query. All of this is covered by `tests/TerrainCollisionTests.cpp`. **It is not called from anywhere outside `src/terrain/` yet.**
-- **Step 6 (review checkpoint)**: done. As part of it, the *old* hardcoded-floor ground correction was moved from `World::handleCollisions()` into `Player` itself — `Player::groundCollisionLogic()` now runs between `movementLogic()` and `attackingLogic()` inside `Player::update()`, using bounds `World` hands it each frame via `Player::setGroundBounds()` (mirroring the existing `setInputState()` pattern). This still uses the hardcoded floor rectangle, **not** `TerrainCollision`. That swap is Step 7.
-- **Step 7 onward** (actually wiring `TerrainCollision` into `Player`/`Enemy`/`World`, loading terrain from Tiled via a `TerrainMapLoader`) — **not started.**
-- **Known open bug**: intermittent mouse-click/attack failures, cause unconfirmed. See `MOUSE_INPUT_DIAGNOSTICS.md` for the diagnostic protocol; no fix has been attempted yet.
+- **Steps 1–7 of `COLLISION_IMPLEMENTATION_GUIDE.md` are complete.** Every box through Step 7 is ticked, and the commit history matches it at one commit per sub-step.
+- **Terrain resolver (`src/terrain/`)**: `TerrainCollision::resolveMovement()` does swept AABB collision with repeated sweeping for sliding (capped at 4 iterations), merges simultaneous multi-solid impacts independent of storage order, separates face vs. corner contacts to avoid false hits at terrain seams, uses a documented floating-point tolerance, and `hasGroundSupport()` answers final ground support as an independent query. `tests/TerrainCollisionTests.cpp` covers it in 13 headless scenario groups.
+- **Aeris runs on the resolver (Step 7).** `World` owns the `TerrainCollision` and passes it into every `Entity::update`. The old `World::collision_player_ground` response and its call are gone, and so are `Player::groundCollisionLogic()` and `Player::setGroundBounds()` — the interim arrangement Step 6 created. There is now exactly one terrain correction path; if a second one ever appears, that's the bug.
+- **`Enemy` has been split into a shared base plus concrete enemies** (22 September 2026), ahead of Step 8 and outside the guide's numbered steps. `Enemy` is now abstract and owns the frame order; `Spider` is the one concrete enemy, under `src/entities/enemies/`. Behaviour is unchanged — it was a pure restructure, so that Step 8's terrain sequencing is written once in `Enemy::update` instead of being repeated in each of the 5–8 planned enemies. Verified by syntax-checking every affected translation unit; no new compiler warnings.
+- **Step 8 (spiders on the same resolver) is next, and none of it has been started.** `KNOWN_ISSUES.md` #5 is effectively its to-do list: `Enemy::update` takes `terrain` and ignores it and passes the literal `1` where real ground support belongs, `Spider::movementLogic` still moves the shape before clamping rather than after, and there is no gravity. The work now lands in two files — see the guide's Step 8 scope line.
+- **One decision is owed before Step 8.** `KNOWN_ISSUES.md` #4 suggests pulling the spawn-validation item forward from Step 9. The spider spawns at y 500–550 against a floor whose top is y 550 — legal exact-boundary contact, but with zero margin. Nothing checks it today because the spider bypasses the resolver; Step 8 makes it checked every frame, at which point a one-pixel change to the spider or the floor becomes an uncaught `std::invalid_argument` rather than a visual glitch. Whether to reorder is David's call (Rule 1), not the agent's.
+- **Steps 9–12** (the single death/respawn reset path, `TerrainMapLoader`, the Tiled `Collision` object layer replacing the hardcoded floor, final verification) — **not started.**
+- **`COLLISION_ENGINE_DEVELOPMENT_DRAFT.md` has not been brought up to date for Steps 6 and 7.** Its header still says "Steps 1 through 5," and its Section 21 source map still claims `Player.cpp` "does not yet call TerrainCollision" and `World.cpp` "does not yet own a TerrainCollision instance." Treat those as stale rather than current, and see Rule 6 before relying on anything else in it.
+- **Known open bugs**: `KNOWN_ISSUES.md` holds the six recorded during the Step 7 audit — four in the respawn path (owned by Step 9), one covering the enemy placeholders (Step 8), and one game-feel question about dash-attack input that a play test should settle rather than a code change. Separately, intermittent mouse-click/attack failures remain unexplained; `MOUSE_INPUT_DIAGNOSTICS.md` has the diagnostic protocol, and no fix has been attempted.
 
 Confirm the above against `git log --oneline` and the checkbox state in `COLLISION_IMPLEMENTATION_GUIDE.md` before acting on it — this section will drift out of date as work continues.
