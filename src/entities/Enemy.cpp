@@ -3,6 +3,7 @@
 //
 
 #include "entities/Enemy.hpp"
+#include "game/Constants.hpp"
 
 Enemy::Enemy(const sf::Vector2f& position, const sf::Vector2f& size)
 {
@@ -14,10 +15,27 @@ Enemy::Enemy(const sf::Vector2f& position, const sf::Vector2f& size)
 
 void Enemy::update(const sf::Time dt, const TerrainCollision& terrain)
 {
-    movementLogic(dt, 1);
+    m_velocity.y += Constants::Physics::Gravity * dt.asSeconds();
+    const sf::Vector2f displacement = movementLogic(dt, terrain.hasGroundSupport(m_shape.getGlobalBounds()));
+    const TerrainMove moved = resolveTerrainMovement(m_shape.getGlobalBounds(), terrain, displacement);
+    if (terrain.hasGroundSupport(m_shape.getGlobalBounds()))
+        m_onGround = true;
+    else
+        m_onGround = false;
+    if (moved.contacts.floor && m_velocity.y > 0.f)
+        m_velocity.y = 0.f;
+    if (moved.contacts.ceiling && m_velocity.y < 0.f)
+        m_velocity.y = 0.f;
+    if (moved.contacts.leftWall && m_velocity.x < 0.f)
+        m_velocity.x = 0.f;
+    if (moved.contacts.rightWall && m_velocity.x > 0.f)
+        m_velocity.x = 0.f;
+
     animationLogic(dt);
 
-    m_lastFacingDirection = m_currentFacingDirection; // update for next frame
+    // Update for next frame
+    m_lastFacingDirection = m_currentFacingDirection;
+    contactLogic(moved.contacts);
 }
 
 void Enemy::attackingLogic()

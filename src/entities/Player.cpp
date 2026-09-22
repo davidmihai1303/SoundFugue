@@ -12,7 +12,6 @@ Player::Player(const sf::Texture& standingTexture, const sf::Texture& walkingTex
     m_walkingSprite(walkingTexture),
     m_attackingSprite(attackingTexture),
 
-    m_onGround(false),
     m_isFrozen(false),
     m_shiftFromGround(false),
     m_dashAttack(false),

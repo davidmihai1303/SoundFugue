@@ -25,6 +25,8 @@ protected:
     // Only derived enemies construct one. Enemy has no movement or animations of its own, so it sets up just the physical body and the facing bookkeeping.
     Enemy(const sf::Vector2f& position, const sf::Vector2f& size);
 
+    virtual void contactLogic(const TerrainContacts& contacts) {};
+
     // Each enemy owns its own sprites and animation timers, so each selects and advances its own.
     virtual void animationLogic(sf::Time dt) = 0;
 };

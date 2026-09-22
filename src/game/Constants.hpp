@@ -58,6 +58,7 @@ namespace Constants {
         // Hitbox
         inline constexpr float HitboxWidth = 50.f;
         inline constexpr float HitboxHeight = 50.f;
+        inline constexpr float Speed = 200.f;
         namespace Animation {
             inline constexpr float WalkingAnimDuration = 0.1f;
             inline constexpr unsigned int WalkingFrameCount = 4;

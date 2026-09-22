@@ -5,8 +5,7 @@
 #include "entities/Entity.hpp"
 
 Entity::Entity()
-    : m_velocity(0.f, 0.f), m_isMoving(false), m_isAttacking(false),
-      m_currentFacingDirection(false) {
+    : m_velocity(0.f, 0.f), m_movement(0.f, 0.f), m_isMoving(false), m_onGround(false), m_isAttacking(false), m_currentFacingDirection(false) {
     // Set the clocks on stop and time=0 by default
     m_activeAttackClock.reset();
     m_cooldownAttackClock.reset();

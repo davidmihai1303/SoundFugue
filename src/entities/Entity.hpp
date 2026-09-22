@@ -39,8 +39,10 @@ public:
 protected:
     sf::RectangleShape m_shape;
     sf::Vector2f m_velocity;
+    sf::Vector2f m_movement;
 
     bool m_isMoving;
+    bool m_onGround;
 
     // Attack logic
     bool m_isAttacking;

@@ -18,11 +18,9 @@ public:
 
 protected:
     void animationLogic(sf::Time dt) override;
+    void contactLogic(const TerrainContacts& contacts) override;
 
 private:
-    float m_leftLimit;
-    float m_rightLimit;
-
     sf::Sprite m_walkingSprite;
 
     int m_walking_currentFrame;

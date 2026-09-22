@@ -14,7 +14,7 @@ The decisions for this first version are:
 - Terrain correction preserves the active attack and its animation progress. Position the attack hitbox from the corrected body position before checking hits.
 - A wall stops dash movement; the attack and airborne freeze finish normally.
 - Death immediately cancels the attack and makes its hitbox inactive. Respawning selects the standing animation immediately, with movement and attack state reset.
-- Spiders gain gravity, keep their patrol limits, turn at walls, and fall off ledges.
+- Enemies gain gravity and fall off ledges. The spider moves continuously in its facing direction and reverses on a horizontal terrain contact; fixed patrol intervals are not used.
 - Enemy damage, attack hits, and note collection remain gameplay overlap checks.
 - One-way platforms, slopes, rotated shapes, moving platforms, physical pushing between actors, and map-based entity spawning come later.
 
@@ -152,17 +152,19 @@ Keep David's idea as a possible later optimization: check the stored floor-impac
 
 ## Step 8 — Connect spiders to the same resolver
 
-**Edit:** `src/entities/Enemy.hpp` / `.cpp` (the shared base) and `src/entities/enemies/Spider.hpp` / `.cpp` (the concrete spider). `Enemy` was split into a base plus concrete enemies before this step, so the work now lands in both: what every enemy shares -- gravity, the terrain sweep, and the velocity responses to floor and ceiling contacts -- belongs in `Enemy::update`, while the patrol displacement, its clamp, and turning around belong in `Spider`. Reversing on a wall contact needs both, since the contact is known in `Enemy` and the reaction is `Spider`'s.
+**Edit:** `src/entities/Enemy.hpp` / `.cpp` (the shared base) and `src/entities/enemies/Spider.hpp` / `.cpp` (the concrete spider). `Enemy` was split into a base plus concrete enemies before this step, so the work lands in both. Everything every enemy shares -- gravity, the terrain sweep, applying the corrected position, and the velocity responses to floor and ceiling contacts -- belongs in `Enemy::update`. Deciding intended movement and deciding what a horizontal contact means belong to the concrete enemy.
 
-- [ ] Apply the existing gravity constant to vertical velocity.
-- [ ] Calculate horizontal patrol displacement and limit the requested destination to the current patrol interval, accounting for body width.
-- [ ] Apply that limit before the terrain sweep. Clamping or teleporting after collision resolution could place the spider through a wall.
-- [ ] Resolve both movement axes through the shared terrain system and synchronize the corrected body and sprite positions.
-- [ ] Stop downward velocity on landing and upward velocity at a ceiling.
-- [ ] Reverse patrol direction when moving into a wall or reaching a patrol limit, then update facing and animation.
-- [ ] Allow unsupported spiders to fall. Do not add a ledge-avoidance probe.
+The fixed patrol interval from the original mock-up is gone. An enemy now walks in its facing direction until terrain stops it, and the contact itself is what reverses it, so there are no limits to clamp against.
 
-**Checkpoint:** The existing spider stays on the floor, patrols within its original limits, and uses gravity. The resolver contains no spider-specific rules.
+- [x] Apply the existing gravity constant to vertical velocity in `Enemy::update`, before intended movement is decided, so the displacement includes this frame's gravity.
+- [x] Build each frame's horizontal movement from the enemy's stored facing direction into `m_movement`, resetting it first. `m_movement` is intent and carries no memory between frames; `m_velocity` stays physics-only, so clearing it on contact cannot destroy the direction the enemy is walking.
+- [x] Have `movementLogic` return the composed displacement and never write the shape. `Enemy::update` resolves it and applies the corrected position exactly once, so nothing can place a body past the sweep that produced it.
+- [x] Resolve both movement axes through the shared terrain system and synchronize the corrected body and sprite positions.
+- [x] Stop downward velocity on landing and upward velocity at a ceiling.
+- [x] Reverse direction on a horizontal terrain contact and flip the sprite with it, through a virtual hook on `Enemy` that hands the contacts down. The hook has an empty default, so each enemy decides for itself what a wall means.
+- [x] Allow unsupported enemies to fall. Do not add a ledge-avoidance probe.
+
+**Checkpoint:** The spider rests on the floor under gravity, walks continuously, reverses direction and flips its sprite when terrain blocks it horizontally, and falls when it leaves a ledge. The resolver contains no enemy-specific rules, and no enemy writes its own position.
 
 ## Step 9 — Make spawning and interactions use valid positions
 
@@ -241,7 +243,7 @@ Run the geometry and loader tests in both Debug and Release. Then run the game f
 | Start a new attack after respawn | The animation starts at its first frame and no previous attack state carries over. |
 | Invalid collision object or overlapping spawn | A useful error identifies the placement or map problem. |
 
-For spider checks, use temporary test placements: put a wall ahead of it inside its patrol interval, then place it on a platform whose edge lies inside that interval. Keep its starting body clear of terrain. Confirm that it turns at the wall and falls from the platform, then restore the normal test-map placement.
+For spider checks, use temporary test placements: put a wall in its path, then place it on a platform with an open edge. Keep its starting body clear of terrain. Confirm that it reverses at the wall, that its sprite flips with it, and that it falls from the platform, then restore the normal test-map placement.
 
 Check movement at different frame rates and with the existing maximum frame duration. Do not compensate for collision defects by changing jump strength, speed, or gravity.
 

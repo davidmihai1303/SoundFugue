@@ -47,8 +47,6 @@ private:
     // --------
 
     InputState m_inputState;
-    sf::Vector2f m_movement;
-    bool m_onGround;
     sf::Time m_cooldownAttackTime = sf::seconds(Constants::Player::AttackCooldown);
     sf::Time m_activeAttackTime = sf::seconds(Constants::Player::ActiveAttackDuration);
 

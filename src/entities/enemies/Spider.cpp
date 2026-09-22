@@ -15,12 +15,6 @@ Spider::Spider(const sf::Vector2f& position, const sf::Vector2f& size,
                                                     m_walking_numFrames(Constants::Spider::Animation::WalkingFrameCount)
 {
     m_shape.setFillColor(sf::Color::Red);
-    m_velocity = (sf::Vector2f(100.f, 0.f));
-
-    // Set limits to which it moves
-    m_leftLimit = position.x - 100.f;
-    m_rightLimit = position.x + 100.f;
-
 
     const sf::Vector2u walkingTextureSize = walkingTexture.getSize();
     m_walking_frameSize = sf::Vector2u(walkingTextureSize.x / m_walking_numFrames, walkingTextureSize.y);
@@ -29,31 +23,21 @@ Spider::Spider(const sf::Vector2f& position, const sf::Vector2f& size,
         static_cast<float>(m_walking_frameSize.x) / 2, static_cast<float>(m_walking_frameSize.y)
     }); //origin in the middle bottom
     m_walkingSprite.setScale({1.3f, 1.3f});
+    if (!m_currentFacingDirection)
+        m_walkingSprite.setScale({-1.f * m_walkingSprite.getScale().x, m_walkingSprite.getScale().y});
 }
 
 sf::Vector2f Spider::movementLogic(const sf::Time dt, bool hasGroundSupport)
 {
-    m_shape.move(m_velocity * dt.asSeconds());
+    m_movement = {0.f, 0.f};
+    // As long as there is no horizontal collision, the spider just moves , otherwise it changes direction
+    if (m_currentFacingDirection)
+    {
+        m_movement.x += Constants::Spider::Speed;
+    }else
+        m_movement.x -= Constants::Spider::Speed;
 
-    if (const float x = m_shape.getPosition().x; x < m_leftLimit)
-    {
-        m_shape.setPosition({m_leftLimit, m_shape.getPosition().y});
-        m_velocity.x = std::abs(m_velocity.x);
-        m_currentFacingDirection = false;
-    }
-    else if (x + m_shape.getSize().x > m_rightLimit)
-    {
-        m_shape.setPosition({m_rightLimit - m_shape.getSize().x, m_shape.getPosition().y});
-        m_velocity.x = -std::abs(m_velocity.x);
-        m_currentFacingDirection = true;
-    }
-
-    // Flip the sprites
-    if (m_lastFacingDirection != m_currentFacingDirection)
-    {
-        m_walkingSprite.setScale({-1.f * m_walkingSprite.getScale().x, m_walkingSprite.getScale().y});
-    }
-    return {0.f, 0.f};
+    return (m_velocity + m_movement) * dt.asSeconds();
 }
 
 void Spider::animationLogic(const sf::Time dt)
@@ -88,6 +72,15 @@ void Spider::walkingAnimation(const sf::Time dt)
     });
 }
 
+void Spider::contactLogic(const TerrainContacts& contacts)
+{
+    if (contacts.leftWall || contacts.rightWall)
+    {
+        m_currentFacingDirection = !m_currentFacingDirection;
+        // Flip the sprite
+        m_walkingSprite.setScale({-1.f * m_walkingSprite.getScale().x, m_walkingSprite.getScale().y});
+    }
+}
 
 void Spider::draw(sf::RenderTarget& target) const
 {
