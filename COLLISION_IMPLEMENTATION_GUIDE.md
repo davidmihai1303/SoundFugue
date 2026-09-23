@@ -43,13 +43,13 @@ The following preparatory fixes have already been implemented by you and reviewe
 - [x] Refresh `playerBounds` between collision stages after possible position changes.
 - [x] Return from the enemy collision function immediately after respawning, before any further enemy or attack checks.
 
-The attack-hitbox offset after the current ground correction is still present. We will address it through the new update order in Step 7. Do not add an interim positioning helper just to patch `World::collision_player_ground`; that function will be removed. The existing positioning code in `Player::attackingLogic` will run after terrain resolution and use the corrected body position.
+The attack-hitbox offset left by the old ground correction is resolved. Terrain resolution now runs before the existing positioning code in `Player::attackingLogic`, which reads the corrected body position, and `World::collision_player_ground` has been removed.
 
 Death/respawn is a separate case: it occurs during enemy interactions, after the player's normal update. Step 9 must cancel the attack and immediately change the selected animation. The existing early return prevents further enemy checks in that frame, but does not reset player state.
 
 ## Step 1 — Establish the starting behavior
 
-**Read:** `src/game/World.cpp`, `src/Player.cpp`, `src/Enemy.cpp`, and `src/Entity.cpp`.
+**Read:** `src/game/World.cpp`, `src/entities/Player.cpp`, `src/entities/Enemy.cpp`, and `src/entities/Entity.cpp`.
 
 - [x] Run the existing game from CLion and try walking, jumping, sprinting, airborne attacks, enemy contact, and note collection.
 - [x] Follow the current movement path: `World` updates the entities; the player moves its shape; `World` then checks overlap with the hardcoded floor.
@@ -61,7 +61,7 @@ Death/respawn is a separate case: it occurs during enemy interactions, after the
 
 ## Step 2 — Define the geometry and movement contract
 
-**Create:** `src/TerrainCollision.hpp` and `src/TerrainCollision.cpp`.
+**Create:** `src/terrain/TerrainCollision.hpp` and `src/terrain/TerrainCollision.cpp`, with `TerrainContacts.hpp` and `TerrainMove.hpp` beside them.
 
 - [x] Use SFML rectangles for actor bodies and terrain. Positions are world pixels measured from the top-left; positive X goes right and positive Y goes down. Body size comes from the physical hitbox, not the sprite or attack area.
 - [x] Define `TerrainContacts` to describe floor, ceiling, left-wall, and right-wall impacts. Left and right refer to the actor's sides.
@@ -184,7 +184,7 @@ The fixed patrol interval from the original mock-up is gone. An enemy now walks 
 
 ## Step 10 — Read terrain objects through tmxlite
 
-**Create:** `src/TerrainMapLoader.hpp`, `src/TerrainMapLoader.cpp`, and `tests/TerrainMapLoaderTests.cpp`. **Update:** `CMakeLists.txt`.
+**Create:** `src/terrain/TerrainMapLoader.hpp`, `src/terrain/TerrainMapLoader.cpp`, and `tests/TerrainMapLoaderTests.cpp`. **Update:** `CMakeLists.txt`.
 
 - [ ] Give the loader a parsed `tmx::Map` as input and a collection of SFML terrain rectangles as output. Keep parsing out of the collision resolver.
 - [ ] Find exactly one top-level object layer named `Collision`. Report a missing layer, duplicate layer, wrong layer type, or nested `Collision` layer clearly.

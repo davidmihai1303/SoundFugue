@@ -123,7 +123,8 @@ sf::Vector2f Player::movementLogic(const sf::Time dt, bool hasGroundSupport) {
     }
 
     // Jumping logic and gravity
-    if (m_onGround && sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::Space)) {
+    // No jump while frozen: a frozen attack must finish first (KNOWN_ISSUES.md #7)
+    if (m_onGround && !m_isFrozen && sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::Space)) {
         m_velocity.y = -Constants::Player::JumpStrength;
         m_onGround = false;
         // Stop attacking only when jump begins
@@ -221,15 +222,15 @@ void Player::attackingLogic() {
 
 void Player::attack() {
     // if cooldown has passed
-    // NOTE: the second condition is always true here and guards nothing. attackingLogic() parks
-    // m_activeAttackClock with reset() earlier in the same frame, so by the time attack() runs its
-    // elapsed time is either exactly zero or still below m_activeAttackTime.
-    if (m_cooldownAttackClock.getElapsedTime() == sf::Time::Zero &&
-        m_activeAttackClock.getElapsedTime() <= m_activeAttackTime) {
+    if (m_cooldownAttackClock.getElapsedTime() == sf::Time::Zero && !m_dashAttack) {
         m_isAttacking = true;
         m_cooldownAttackClock.start();
         // Using restart() to be able to spam-attack
         m_activeAttackClock.restart();
+        // Restart the animation
+        m_attacking_elapsedTime = 0.f;
+        m_attacking_currentFrame = 0;
+        m_attackingSprite.setTextureRect(sf::IntRect({0, 0}, sf::Vector2<int>(m_attacking_frameSize)));
 
         if (!m_onGround) {
             // We are already in the air when starting the attack

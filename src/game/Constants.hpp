@@ -40,7 +40,7 @@ inline constexpr float AttackingHitboxHeight = 65.f;
 inline sf::Color AttackingHitboxColor = sf::Color::Transparent;
 
 // Combat
-inline constexpr float AttackCooldown = 0.5f;
+inline constexpr float AttackCooldown = 0.36f;
 inline constexpr float ActiveAttackDuration = 0.56f; //TODO experiment with other values
 inline constexpr float RunningAttackBoost = 1.25f;
 

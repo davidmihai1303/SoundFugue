@@ -32,11 +32,12 @@ Relevant files are `src/game/Game.cpp`, `src/game/World.cpp`, `src/game/InputSta
 
 - Input is passed to the player before its update. The earlier input-order problem is already fixed.
 - `hasClicked` is reset once at the start of event processing. A left-button press sets it to true. A release clears `clickDown`, not `hasClicked`, so a press and release in the same frame do not automatically lose the click.
-- The attack cooldown is 0.5 seconds. A click during cooldown is discarded, rather than queued. This explains rapid-click failures but does not explain isolated failures after more than a second.
+- The attack cooldown is 0.36 seconds (`Constants::Player::AttackCooldown`). A click during cooldown is discarded, rather than queued. This explains rapid-click failures but does not explain isolated failures after more than a second.
+- Clicks during an airborne dash attack are ignored by design: `attack()` rejects any click while `m_dashAttack` is set. A click that does nothing during a dash is expected behavior, not the intermittent failure.
 - Both attack clocks are explicitly reset in `Entity`'s constructor. In the installed SFML implementation, `reset()` stops a clock at zero. Comparing that stopped clock against `sf::Time::Zero` is intentional; it is not a floating-point equality problem.
 - A/D and Space use `sf::Keyboard::isKeyPressed`, which can read keyboard state without window focus. Mouse attacks use window events. Working keyboard movement therefore does not establish that mouse events reach the window.
-- Changing direction or jumping can cancel an attack. Reproduce initially without either action.
-- The terrain resolver and ground-support query are not yet connected to player movement. Their headless tests cannot verify mouse-event delivery or attack animation.
+- Changing direction or jumping can cancel a grounded attack; neither is possible during an airborne freeze. Reproduce initially without either action.
+- The terrain resolver and ground-support query now drive player movement (Step 7), but their tests are headless and cannot verify mouse-event delivery or attack animation. Terrain resolution runs before `attackingLogic`, so it cannot restart or cancel an attack; it is not a suspect here.
 
 ## 3. Establish a repeatable comparison
 
@@ -88,7 +89,7 @@ Add messages only when a click or attack request occurs:
 1. After `m_inputState.hasClicked = true` in `Game::processEvents`: record that the left click was stored.
 2. In `World::update`, when the incoming `inputState.hasClicked` is true: record that input is being forwarded before the entity update.
 3. Inside `Player::attackingLogic`'s `if (m_inputState.hasClicked)`: record that the player is requesting an attack.
-4. At the start of `Player::attack`: record both attack clocks' elapsed values, their running states, and `m_isAttacking`.
+4. At the start of `Player::attack`: record both attack clocks' elapsed values, their running states, `m_isAttacking`, and `m_dashAttack`.
 5. Inside the existing acceptance condition, immediately after `m_isAttacking = true`: record `ATTACK ACCEPTED`.
 
 If using prints in `Player.cpp`, explicitly include `<iostream>` there.
@@ -96,8 +97,7 @@ If using prints in `Player.cpp`, explicitly include `<iostream>` there.
 The current acceptance condition is:
 
 ```cpp
-m_cooldownAttackClock.getElapsedTime() == sf::Time::Zero &&
-m_activeAttackClock.getElapsedTime() <= m_activeAttackTime
+m_cooldownAttackClock.getElapsedTime() == sf::Time::Zero && !m_dashAttack
 ```
 
 Keep the condition unchanged during the first diagnostic pass. A request message followed by no acceptance message indicates rejection at this gate. Clock readings logged before the condition are approximate snapshots; the clocks can advance between the log and the actual comparison.
@@ -115,7 +115,7 @@ Trace what happens after the acceptance message:
 - Check that the attack texture loaded successfully and has nonzero dimensions. Capture any texture-loading error, the working directory, and the texture path.
 - Compare FPS in good and bad runs. Attack duration uses an elapsed-time clock, while animation advances from frame `dt`, which is clamped in `Game::run`. Long frame stalls can truncate visible animation progress without implying a missing mouse event.
 
-There is a separate animation issue worth examining only if attacks are being accepted: `attack()` restarts the active-attack clock but does not explicitly restart the animation frame and animation timer. Standing/walking logic resets those counters, but does not immediately reset the attack sprite's texture rectangle. A retrigger during an active attack can therefore continue the existing animation instead of visibly restarting it. This has not been established as the cause of the intermittent startup failure.
+An earlier suspicion here no longer applies: a retriggered attack used to continue the existing animation instead of restarting it. Every accepted click now resets `m_attacking_elapsedTime`, `m_attacking_currentFrame` and the attack sprite's texture rectangle inside `attack()`, so each attack starts from its first frame, whether or not another attack was active.
 
 ## 7. If mouse presses are missing: compare startup and focus behavior
 
