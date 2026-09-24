@@ -36,6 +36,10 @@ public:
 
     void setPosition(const sf::Vector2f& position) override;
 
+    // Death reset: ends the attack, clears motion and input-derived state, restores the dash and the attack cooldown,
+    // faces right, then moves the body and sprites. Ground support comes from the next update's pre-move check.
+    void respawn(const sf::Vector2f& position);
+
     // Code=1
     sf::FloatRect getAttackingBounds() const;
 

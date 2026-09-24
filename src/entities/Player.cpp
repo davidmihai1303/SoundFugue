@@ -376,6 +376,27 @@ void Player::setPosition(const sf::Vector2f& position) {
                                    m_shape.getPosition().y + Constants::Player::HitboxHeight});
 }
 
+void Player::respawn(const sf::Vector2f& position) {
+    cancelAttack();
+    m_velocity = {0.f, 0.f};
+    m_movement = {0.f, 0.f};
+    m_isMoving = false;
+    m_shiftFromGround = false;
+    resetDash();
+    m_cooldownAttackClock.reset();
+
+    // Face right, as at spawn; the sprites always match the current facing here, so mirror them back if needed
+    if (!m_currentFacingDirection) {
+        m_standingSprite.setScale({-1.f * m_standingSprite.getScale().x, 1.f});
+        m_walkingSprite.setScale({-1.f * m_walkingSprite.getScale().x, 1.f});
+        m_attackingSprite.setScale({-1.f * m_attackingSprite.getScale().x, 1.f});
+    }
+    m_currentFacingDirection = true;
+    m_lastFacingDirection = true;
+
+    setPosition(position);
+}
+
 void Player::draw(sf::RenderTarget& target) const {
     target.draw(m_shape);
 

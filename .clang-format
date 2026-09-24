@@ -9,7 +9,7 @@ BasedOnStyle: LLVM
 # --- deliberate differences from LLVM's defaults ---
 BreakBeforeBraces: Attach     # opening brace on the same line
 IndentWidth: 4                # LLVM uses 2; every indented line in src/ uses 4
-ColumnLimit: 120              # LLVM uses 80
+ColumnLimit: 200              # LLVM uses 80
 AccessModifierOffset: -4      # public: / private: sit flush with the class keyword
 PointerAlignment: Left        # const sf::Vector2f& position
 

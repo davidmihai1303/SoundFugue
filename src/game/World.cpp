@@ -91,9 +91,8 @@ void World::collision_player_enemies(const sf::FloatRect& playerBounds) {
 
         const sf::FloatRect enemyBounds = (*e).getBounds();
         if (playerBounds.findIntersection(enemyBounds)) {
-            // simple reaction: reset player position
-            (*m_player).setPosition(Constants::Player::RespawnPosition);
-            (*m_player).setVelocity({(*m_player).getVelocity().x, 0.f});
+            // Death: reset the player's state and move her to the respawn point
+            (*m_player).respawn(Constants::Player::RespawnPosition);
             return;
         }
     }
