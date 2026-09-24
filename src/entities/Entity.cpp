@@ -4,9 +4,7 @@
 
 #include "entities/Entity.hpp"
 
-Entity::Entity()
-    : m_velocity(0.f, 0.f), m_movement(0.f, 0.f), m_isMoving(false), m_onGround(false), m_isAttacking(false),
-      m_currentFacingDirection(false) {
+Entity::Entity() : m_velocity(0.f, 0.f), m_movement(0.f, 0.f), m_isMoving(false), m_onGround(false), m_isAttacking(false), m_currentFacingDirection(false) {
     // Set the clocks on stop and time=0 by default
     m_activeAttackClock.reset();
     m_cooldownAttackClock.reset();
@@ -36,8 +34,7 @@ void Entity::setVelocity(const sf::Vector2f& velocity) {
     m_velocity = velocity;
 }
 
-TerrainMove Entity::resolveTerrainMovement(const sf::FloatRect& body, const TerrainCollision& terrain,
-                                           const sf::Vector2f& displacement) {
+TerrainMove Entity::resolveTerrainMovement(const sf::FloatRect& body, const TerrainCollision& terrain, const sf::Vector2f& displacement) {
     const TerrainMove moved = terrain.resolveMovement(body, displacement);
     setPosition(moved.bounds.position);
     return moved;

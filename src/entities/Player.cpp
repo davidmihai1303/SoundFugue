@@ -15,14 +15,14 @@ Player::Player(const sf::Texture& standingTexture, const sf::Texture& walkingTex
       // --- Animations
       m_animationToDraw(0),
 
-      m_standing_currentFrame(0), m_standing_animDuration(Constants::Player::Animation::StandingAnimDuration),
-      m_standing_elapsedTime(0.f), m_standing_numFrames(Constants::Player::Animation::StandingFrameCount),
+      m_standing_currentFrame(0), m_standing_animDuration(Constants::Player::Animation::StandingAnimDuration), m_standing_elapsedTime(0.f),
+      m_standing_numFrames(Constants::Player::Animation::StandingFrameCount),
 
-      m_walking_currentFrame(0), m_walking_animDuration(Constants::Player::Animation::WalkingAnimDuration),
-      m_walking_elapsedTime(0.f), m_walking_numFrames(Constants::Player::Animation::WalkingFrameCount),
+      m_walking_currentFrame(0), m_walking_animDuration(Constants::Player::Animation::WalkingAnimDuration), m_walking_elapsedTime(0.f),
+      m_walking_numFrames(Constants::Player::Animation::WalkingFrameCount),
 
-      m_attacking_currentFrame(0), m_attacking_animDuration(Constants::Player::Animation::AttackingAnimDuration),
-      m_attacking_elapsedTime(0.f), m_attacking_numFrames(Constants::Player::Animation::AttackingFrameCount) {
+      m_attacking_currentFrame(0), m_attacking_animDuration(Constants::Player::Animation::AttackingAnimDuration), m_attacking_elapsedTime(0.f),
+      m_attacking_numFrames(Constants::Player::Animation::AttackingFrameCount) {
     // Create the player's hitbox
     m_shape.setSize(sf::Vector2f({Constants::Player::HitboxWidth, Constants::Player::HitboxHeight}));
     m_shape.setFillColor(Constants::Player::HitboxColor);
@@ -37,25 +37,19 @@ Player::Player(const sf::Texture& standingTexture, const sf::Texture& walkingTex
     m_standing_frameSize = sf::Vector2u(standingTextureSize.x / m_standing_numFrames, standingTextureSize.y);
     // Set the first frame
     m_standingSprite.setTextureRect(sf::IntRect({0, 0}, sf::Vector2<int>(m_standing_frameSize)));
-    m_standingSprite.setOrigin(
-        {static_cast<float>(m_standing_frameSize.x) / 2 + 5.f,
-         static_cast<float>(m_standing_frameSize.y)}); //origin in the middle bottom with offset to match the body
+    m_standingSprite.setOrigin({static_cast<float>(m_standing_frameSize.x) / 2 + 5.f, static_cast<float>(m_standing_frameSize.y)}); //origin in the middle bottom with offset to match the body
 
     //     --------- WALKING ANIMATION --------
     const sf::Vector2u walkingTextureSize = walkingTexture.getSize();
     m_walking_frameSize = sf::Vector2u(walkingTextureSize.x / m_walking_numFrames, walkingTextureSize.y);
     m_walkingSprite.setTextureRect(sf::IntRect({0, 0}, sf::Vector2<int>(m_walking_frameSize)));
-    m_walkingSprite.setOrigin(
-        {static_cast<float>(m_walking_frameSize.x) / 2 + 5.f,
-         static_cast<float>(m_walking_frameSize.y)}); //origin in the middle bottom with offset to match the body
+    m_walkingSprite.setOrigin({static_cast<float>(m_walking_frameSize.x) / 2 + 5.f, static_cast<float>(m_walking_frameSize.y)}); //origin in the middle bottom with offset to match the body
 
     //    --------- ATTACKING ANIMATION --------
     const sf::Vector2u attackingTextureSize = attackingTexture.getSize();
     m_attacking_frameSize = sf::Vector2u(attackingTextureSize.x / m_attacking_numFrames, attackingTextureSize.y);
     m_attackingSprite.setTextureRect(sf::IntRect({0, 0}, sf::Vector2<int>(m_attacking_frameSize)));
-    m_attackingSprite.setOrigin(
-        {static_cast<float>(m_standing_frameSize.x) / 2 + 5.f,
-         static_cast<float>(m_attacking_frameSize.y)}); // We keep the same x from the standing/walking animation
+    m_attackingSprite.setOrigin({static_cast<float>(m_standing_frameSize.x) / 2 + 5.f, static_cast<float>(m_attacking_frameSize.y)}); // We keep the same x from the standing/walking animation
 }
 
 void Player::update(const sf::Time dt, const TerrainCollision& terrain) {
@@ -143,8 +137,7 @@ sf::Vector2f Player::movementLogic(const sf::Time dt, bool hasGroundSupport) {
             m_shiftFromGround = true;
 
         // Also make the animation move faster
-        m_walking_animDuration =
-            Constants::Player::Animation::WalkingAnimDuration / Constants::Player::SprintMultiplier;
+        m_walking_animDuration = Constants::Player::Animation::WalkingAnimDuration / Constants::Player::SprintMultiplier;
     } else
         m_walking_animDuration = Constants::Player::Animation::WalkingAnimDuration;
 
@@ -195,8 +188,7 @@ void Player::attackingLogic() {
     }
 
     // Draw a rectangle representing the hitbox of the Hit-Area
-    attackingShape.setSize(
-        sf::Vector2f({Constants::Player::AttackingHitboxWidth, Constants::Player::AttackingHitboxHeight}));
+    attackingShape.setSize(sf::Vector2f({Constants::Player::AttackingHitboxWidth, Constants::Player::AttackingHitboxHeight}));
     attackingShape.setFillColor(Constants::Player::AttackingHitboxColor);
     if (m_currentFacingDirection) {
         // facing right
@@ -368,12 +360,9 @@ void Player::attackingAnimation(const sf::Time dt) {
 
 void Player::setPosition(const sf::Vector2f& position) {
     m_shape.setPosition(position);
-    m_standingSprite.setPosition({m_shape.getPosition().x + Constants::Player::HitboxWidth / 2,
-                                  m_shape.getPosition().y + Constants::Player::HitboxHeight});
-    m_walkingSprite.setPosition({m_shape.getPosition().x + Constants::Player::HitboxWidth / 2,
-                                 m_shape.getPosition().y + Constants::Player::HitboxHeight});
-    m_attackingSprite.setPosition({m_shape.getPosition().x + Constants::Player::HitboxWidth / 2,
-                                   m_shape.getPosition().y + Constants::Player::HitboxHeight});
+    m_standingSprite.setPosition({m_shape.getPosition().x + Constants::Player::HitboxWidth / 2, m_shape.getPosition().y + Constants::Player::HitboxHeight});
+    m_walkingSprite.setPosition({m_shape.getPosition().x + Constants::Player::HitboxWidth / 2, m_shape.getPosition().y + Constants::Player::HitboxHeight});
+    m_attackingSprite.setPosition({m_shape.getPosition().x + Constants::Player::HitboxWidth / 2, m_shape.getPosition().y + Constants::Player::HitboxHeight});
 }
 
 void Player::respawn(const sf::Vector2f& position) {

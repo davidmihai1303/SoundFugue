@@ -55,8 +55,7 @@ protected:
     bool m_currentFacingDirection;
     bool m_lastFacingDirection;
 
-    TerrainMove resolveTerrainMovement(const sf::FloatRect& body, const TerrainCollision& terrain,
-                                       const sf::Vector2f& displacement);
+    TerrainMove resolveTerrainMovement(const sf::FloatRect& body, const TerrainCollision& terrain, const sf::Vector2f& displacement);
 };
 
 #endif //SOUNDFUGUE_ENTITY_HPP

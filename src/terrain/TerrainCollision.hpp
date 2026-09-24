@@ -34,8 +34,7 @@ private:
     };
 
     // Returns the overlap interval for one axis, or no value when no interval exists.
-    static std::optional<AxisInterval> calculateAxisInterval(float bodyMin, float bodyMax, float solidMin,
-                                                             float solidMax, float displacement);
+    static std::optional<AxisInterval> calculateAxisInterval(float bodyMin, float bodyMax, float solidMin, float solidMax, float displacement);
 
     // Collision rectangles that make up the solid terrain in world pixels.
     std::vector<sf::FloatRect> m_solids;

@@ -31,9 +31,7 @@ void validateRectangle(const sf::FloatRect& rect, const std::string& label) {
     }
 }
 
-std::optional<TerrainCollision::AxisInterval>
-TerrainCollision::calculateAxisInterval(const float bodyMin, const float bodyMax, const float solidMin,
-                                        const float solidMax, const float displacement) {
+std::optional<TerrainCollision::AxisInterval> TerrainCollision::calculateAxisInterval(const float bodyMin, const float bodyMax, const float solidMin, const float solidMax, const float displacement) {
     // With no movement, the spans either remain overlapped for the whole request or never overlap.
     if (displacement == 0.f) {
         const bool spansOverlap = bodyMin < solidMax && bodyMax > solidMin;
@@ -105,12 +103,10 @@ TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const s
 
         for (const sf::FloatRect& solid : m_solids) {
             const std::optional<AxisInterval> xInterval =
-                calculateAxisInterval(startBounds.position.x, startBounds.position.x + startBounds.size.x,
-                                      solid.position.x, solid.position.x + solid.size.x, sweepDisplacement.x);
+                calculateAxisInterval(startBounds.position.x, startBounds.position.x + startBounds.size.x, solid.position.x, solid.position.x + solid.size.x, sweepDisplacement.x);
 
             const std::optional<AxisInterval> yInterval =
-                calculateAxisInterval(startBounds.position.y, startBounds.position.y + startBounds.size.y,
-                                      solid.position.y, solid.position.y + solid.size.y, sweepDisplacement.y);
+                calculateAxisInterval(startBounds.position.y, startBounds.position.y + startBounds.size.y, solid.position.y, solid.position.y + solid.size.y, sweepDisplacement.y);
 
             // Both axes need to have an overlap interval for a collision to be possible. (Required but not enough - the 2 intervals need a valid intersection interval)
             if (!xInterval || !yInterval)
@@ -122,16 +118,14 @@ TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const s
 
             // Ignore point grazes and intervals clearly outside this sweep.
             // Values just beyond a boundary are accepted as rounding noise and clamped back into the normalized range.
-            if (enterTime >= leaveTime - collisionTimeTolerance || enterTime < -collisionTimeTolerance ||
-                enterTime > 1.f + collisionTimeTolerance)
+            if (enterTime >= leaveTime - collisionTimeTolerance || enterTime < -collisionTimeTolerance || enterTime > 1.f + collisionTimeTolerance)
                 continue;
             enterTime = std::clamp(enterTime, 0.f, 1.f);
 
             // From this point downwards we have a confirmed collision
 
             // Nearly equal axis entry times mean this solid is entered through a corner.
-            const bool cornerCollision =
-                std::abs(xInterval->enterTime - yInterval->enterTime) <= collisionTimeTolerance;
+            const bool cornerCollision = std::abs(xInterval->enterTime - yInterval->enterTime) <= collisionTimeTolerance;
 
             // The axis that enters last identifies the impacted side. Equal entry times impact a corner.
             TerrainContacts impactContacts{};
@@ -200,8 +194,7 @@ TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const s
         // Move to the impact and keep the unused part of the request for sliding.
         startBounds.position.x += sweepDisplacement.x * earliestImpactTime;
         startBounds.position.y += sweepDisplacement.y * earliestImpactTime;
-        remainingDisplacement = {sweepDisplacement.x * (1.f - earliestImpactTime),
-                                 sweepDisplacement.y * (1.f - earliestImpactTime)};
+        remainingDisplacement = {sweepDisplacement.x * (1.f - earliestImpactTime), sweepDisplacement.y * (1.f - earliestImpactTime)};
 
         // Separate checks let a corner block both remaining components.
         if (earliestImpactContacts.floor || earliestImpactContacts.ceiling)

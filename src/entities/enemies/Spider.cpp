@@ -6,16 +6,14 @@
 #include "game/Constants.hpp"
 
 Spider::Spider(const sf::Vector2f& position, const sf::Vector2f& size, const sf::Texture& walkingTexture)
-    : Enemy(position, size), m_walkingSprite(walkingTexture), m_walking_currentFrame(0),
-      m_walking_animDuration(Constants::Spider::Animation::WalkingAnimDuration), m_walking_elapsedTime(0.f),
+    : Enemy(position, size), m_walkingSprite(walkingTexture), m_walking_currentFrame(0), m_walking_animDuration(Constants::Spider::Animation::WalkingAnimDuration), m_walking_elapsedTime(0.f),
       m_walking_numFrames(Constants::Spider::Animation::WalkingFrameCount) {
     m_shape.setFillColor(sf::Color::Red);
 
     const sf::Vector2u walkingTextureSize = walkingTexture.getSize();
     m_walking_frameSize = sf::Vector2u(walkingTextureSize.x / m_walking_numFrames, walkingTextureSize.y);
     m_walkingSprite.setTextureRect(sf::IntRect({0, 0}, sf::Vector2<int>(m_walking_frameSize)));
-    m_walkingSprite.setOrigin({static_cast<float>(m_walking_frameSize.x) / 2,
-                               static_cast<float>(m_walking_frameSize.y)}); //origin in the middle bottom
+    m_walkingSprite.setOrigin({static_cast<float>(m_walking_frameSize.x) / 2, static_cast<float>(m_walking_frameSize.y)}); //origin in the middle bottom
     m_walkingSprite.setScale({1.3f, 1.3f});
     if (!m_currentFacingDirection)
         m_walkingSprite.setScale({-1.f * m_walkingSprite.getScale().x, m_walkingSprite.getScale().y});

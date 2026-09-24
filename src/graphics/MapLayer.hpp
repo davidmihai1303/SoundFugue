@@ -192,17 +192,14 @@ private:
                         sf::Vertex v[6];
                         v[0] = sf::Vertex{pos, sf::Color::White, sf::Vector2f(texX, texY)};
 
-                        v[1] = sf::Vertex{pos + sf::Vector2f(texW, 0.f), sf::Color::White,
-                                          sf::Vector2f(texX + texW, texY)};
+                        v[1] = sf::Vertex{pos + sf::Vector2f(texW, 0.f), sf::Color::White, sf::Vector2f(texX + texW, texY)};
 
-                        v[2] = sf::Vertex{pos + sf::Vector2f(texW, texH), sf::Color::White,
-                                          sf::Vector2f(texX + texW, texY + texH)};
+                        v[2] = sf::Vertex{pos + sf::Vector2f(texW, texH), sf::Color::White, sf::Vector2f(texX + texW, texY + texH)};
 
                         v[3] = v[0];
                         v[4] = v[2];
 
-                        v[5] = sf::Vertex{pos + sf::Vector2f(0.f, texH), sf::Color::White,
-                                          sf::Vector2f(texX, texY + texH)};
+                        v[5] = sf::Vertex{pos + sf::Vector2f(0.f, texH), sf::Color::White, sf::Vector2f(texX, texY + texH)};
 
                         // Apply standard Tiled flip math
                         applyFlips(m_tileIDs[idx].flipFlags, v);

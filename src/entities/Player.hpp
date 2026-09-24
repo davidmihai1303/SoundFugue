@@ -14,8 +14,7 @@ class Player final : public Entity {
 public:
     friend std::ostream& operator<<(std::ostream& os, const Player& p);
 
-    explicit Player(const sf::Texture& standingTexture, const sf::Texture& walkingTexture,
-                    const sf::Texture& attackingTexture);
+    explicit Player(const sf::Texture& standingTexture, const sf::Texture& walkingTexture, const sf::Texture& attackingTexture);
 
     void update(sf::Time dt, const TerrainCollision& terrain) override;
 

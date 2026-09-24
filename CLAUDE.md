@@ -43,6 +43,10 @@ src/game/
                           by hand in the constructor and holds TWO solids: the floor at
                           (-500, 550) sized 6000x50, which m_ground draws, and a 50x50 block
                           at (-400, 500) that nothing draws. Tiled supplies terrain at Step 11.
+                          At the end of its constructor it checks every entity's spawn and
+                          the respawn point (Constants::Player::RespawnPosition) with
+                          TerrainCollision::validatePlacement(). On enemy contact it calls
+                          Player::respawn() and returns early.
   InputState.hpp          Plain struct describing one frame's raw input (click/shift state,
                           click ordering for dash detection).
   Constants.hpp            All tunable numeric constants (movement, combat, animation,
@@ -65,7 +69,10 @@ src/entities/
                           hasGroundSupport() on the final bounds -> velocity components
                           pointing into a contacted surface are cleared -> attackingLogic()
                           -> animationLogic(). Ground support is deliberately queried on both
-                          sides of the movement; the comments in update() say why.
+                          sides of the movement; the comments in update() say why. Every
+                          way an attack ends (finishing, jump, facing change, death) goes
+                          through the private cancelAttack(); death goes through the public
+                          respawn(position), the single reset path.
   Enemy.cpp/hpp           Abstract shared base for every regular enemy. Owns update(), the whole
                           shared frame: apply gravity -> movementLogic() for intent -> sweep via
                           Entity::resolveTerrainMovement() -> set m_onGround from a fresh
@@ -90,7 +97,9 @@ src/terrain/               A fully-tested swept-AABB collision resolver with no 
   TerrainCollision.*        Tiled, textures, input or any actor class. Both Player and Enemy now
   TerrainContacts.hpp       drive it through Entity::resolveTerrainMovement(). Its rectangles are
   TerrainMove.hpp           still supplied by hand in World's constructor — TerrainMapLoader does
-                            not exist yet (Step 10). See Section 5.
+                            not exist yet (Step 10). validatePlacement() is the public
+                            starting-overlap check that resolveMovement() runs first and World
+                            uses for spawns. See Section 5.
 
 src/graphics/
   TextureHolder.*          RAII texture-loading helper.
@@ -116,10 +125,11 @@ CMakeLists.txt               Fetches SFML 3.1.0 via FetchContent; builds tmxlite
                             TerrainCollisionTests; builds the SoundFugue executable; registers
                             TerrainCollisionTests with CTest.
 
-.clang-format                Attached braces, 4-space indent, 120 columns, LLVM-based. CLion
-                            honours it only with ClangFormat enabled (Settings -> Editor ->
-                            Code Style -> C/C++). src/ was reformatted against it in 831db37;
-                            tests/ has not been.
+.clang-format                Attached braces, 4-space indent, 200 columns (raised from 120 in
+                            4fdeef1), LLVM-based. CLion honours it only with ClangFormat
+                            enabled (Settings -> Editor -> Code Style -> C/C++). src/ was first
+                            reformatted in 831db37; src/ and tests/ were reformatted at 200
+                            columns on 24 September 2026.
 ```
 
 ### Build / test
@@ -152,9 +162,9 @@ The game loads resources via relative paths (`"../resources/..."`), so run the `
 
 ## 5. Current implementation status (verify before trusting — see Rule 6)
 
-As of `79679e2 fixes regarding attacking logic in preparation for chapter 9` (23 September 2026), with the docs brought up to date:
+As of `4fdeef1 collision engine work 9.6` (24 September 2026), with the docs brought up to date:
 
-- **Steps 1-8 of `COLLISION_IMPLEMENTATION_GUIDE.md` are complete.** Every box through Step 8 is ticked. Steps 9, 10 and 11 are entirely untouched; Step 9 is next.
+- **Steps 1-8 of `COLLISION_IMPLEMENTATION_GUIDE.md` are complete; Step 9 is in progress.** Implemented: 9.1 (`9444829`, `validatePlacement()` plus the startup spawn checks), 9.5 and 9.9 (`37b6907`, `cancelAttack()` used at every attack end) and 9.6 (`4fdeef1`, `Player::respawn()`). 9.2, 9.3, 9.4 and 9.8 needed no code; each is ticked with a note in the guide saying why. Ticked: 9.1-9.5, 9.8, 9.9. 9.6 passed its play test on 24 September 2026. Left: 9.7 (the standing pose at respawn). Steps 10 and 11 are untouched.
 - **The guide's file paths follow the `src/<area>/` layout.** Step 10 now says to create `src/terrain/TerrainMapLoader.*`. Which CMake target the loader joins is still undecided: `TerrainCollisionLib` currently links only SFML and is documented as Tiled-free.
 - **Terrain resolver (`src/terrain/`)**: `TerrainCollision::resolveMovement()` does swept AABB collision with repeated sweeping for sliding (capped at 4 iterations), merges simultaneous multi-solid impacts independent of storage order, separates face vs. corner contacts to avoid false hits at terrain seams, uses a documented floating-point tolerance, and `hasGroundSupport()` answers final ground support as an independent query. `tests/TerrainCollisionTests.cpp` covers it in 13 headless scenario groups.
 - **Both actors run on the resolver.** `World` owns the `TerrainCollision` and passes it into every `Entity::update`. Aeris was wired in at Step 7, enemies at Step 8, both through `Entity::resolveTerrainMovement()` — the single place a resolved position is applied to a shape. No actor writes its own body position outside its constructor and the respawn teleport. There is exactly one terrain correction path; if a second one ever appears, that's the bug.
@@ -162,9 +172,9 @@ As of `79679e2 fixes regarding attacking logic in preparation for chapter 9` (23
 - **Step 8's design changed mid-step.** The original mock-up patrol interval is gone. An enemy walks in its facing direction until terrain stops it, and the horizontal contact itself is what reverses it, through `Enemy`'s `contactLogic()` hook. The guide's Step 8 was rewritten to match, so its old boxes about clamping to a patrol interval no longer exist.
 - **Step 8 was play-tested on 22 September 2026 and passed its checkpoint**: resting on the floor without jitter, the turn reading correctly, falling when it leaves a ledge. In the current world the terrain that turns the spider is the undrawn 50x50 block. Step 12's deliberate spider tests — a wall placed in its path and a platform with an open edge — remain part of final verification.
 - **Attack-input changes (`79679e2`, 23 September 2026), made outside the guide's numbered steps.** `Constants::Player::AttackCooldown` is 0.36 s (was 0.5). `Player::attack()` accepts a click whenever the cooldown is ready and no dash is in progress (`!m_dashAttack`), and every accepted click fully restarts the attack: its timer, its animation time and frame, and the attack sprite's texture rectangle. The jump in `Player::movementLogic` also requires `!m_isFrozen`, which resolves `KNOWN_ISSUES.md` #7. Committed in `79679e2` together with the tracked doc edits of 22-23 September, and play-tested on 23 September 2026: everything behaved as intended.
-- **`src/` is formatted** against the committed `.clang-format` (`831db37`). All 24 tracked files under `src/` pass `clang-format --dry-run --Werror`, re-checked on 23 September 2026 at `79679e2`. `tests/TerrainCollisionTests.cpp` has not been formatted yet.
-- **Steps 9-12** (the single death/respawn reset path, `TerrainMapLoader`, the Tiled `Collision` object layer replacing the hardcoded floor, final verification) — **not started.**
+- **Formatting**: `.clang-format`'s column limit is 200 (raised from 120 in `4fdeef1`). All 24 tracked files under `src/` and `tests/TerrainCollisionTests.cpp` were reformatted to it on 24 September 2026, a whitespace-only change, and all pass `clang-format --dry-run --Werror`.
+- **Steps 10-12** (`TerrainMapLoader`, the Tiled `Collision` object layer replacing the hardcoded floor, final verification) — **not started.**
 - **`COLLISION_ENGINE_DEVELOPMENT_DRAFT.md` covers Steps 1-8.** Sections 1-15 are the starting point and the resolver (Steps 1-5), 16-18 the integration (Steps 6-8), and 19-25 the reference sections (algorithm, invariants, mistakes, testing, glossary, source map, working method). Sections 16-18 were written from the code and git history and have no "What was challenging" subsections; those are David's to write.
-- **Known open bugs**: `KNOWN_ISSUES.md` #1-#4 (all in the respawn path, owned by Step 9; #1 also records that dying during a dash blocks attacking until the carried-over attack times out) and #6 (a dash-attack game-feel question a play test should settle). #5 was resolved by Step 8, and #7 (a jump that cancelled an airborne freeze left the freeze on) on 23 September 2026 by refusing the jump while frozen; both are marked resolved in place rather than deleted. Separately, intermittent mouse-click/attack failures remain unexplained; `MOUSE_INPUT_DIAGNOSTICS.md` has the diagnostic protocol, and no fix has been attempted.
+- **Known open bugs**: `KNOWN_ISSUES.md` #3 (the attack pose showing for one frame at respawn, left for 9.7) and #6 (a dash-attack game-feel question a play test should settle). #1 and #2 were resolved by 9.6's `Player::respawn()` (play-tested 24 September 2026) and #4 by 9.1's startup checks. #5 was resolved by Step 8, and #7 (a jump that cancelled an airborne freeze left the freeze on) on 23 September 2026 by refusing the jump while frozen; both are marked resolved in place rather than deleted. Separately, intermittent mouse-click/attack failures remain unexplained; `MOUSE_INPUT_DIAGNOSTICS.md` has the diagnostic protocol, and no fix has been attempted.
 
 Confirm the above against `git log --oneline` and the checkbox state in `COLLISION_IMPLEMENTATION_GUIDE.md` before acting on it — this section will drift out of date as work continues.
