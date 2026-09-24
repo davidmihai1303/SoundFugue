@@ -84,6 +84,10 @@ private:
     int m_attacking_numFrames;
     // ---------------------------
 
+    // Ends the current attack: stops its timer, releases an airborne freeze with zero velocity and clears the dash.
+    // Leaves the cooldown and dash availability (m_hasDashed) unchanged.
+    void cancelAttack();
+
     void animationLogic(sf::Time dt);
     void standingAnimation(sf::Time dt);
     void walkingAnimation(sf::Time dt);

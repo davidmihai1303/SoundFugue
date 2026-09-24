@@ -129,8 +129,7 @@ sf::Vector2f Player::movementLogic(const sf::Time dt, bool hasGroundSupport) {
         m_onGround = false;
         // Stop attacking only when jump begins
         if (m_isAttacking) {
-            m_isAttacking = false;
-            m_activeAttackClock.reset();
+            cancelAttack();
         }
     }
     if (!m_isFrozen)
@@ -185,20 +184,13 @@ void Player::attackingLogic() {
         m_cooldownAttackClock.reset();
     // Reset the active attack
     if (m_activeAttackClock.getElapsedTime() >= m_activeAttackTime) {
-        m_activeAttackClock.reset();
-        m_isAttacking = false;
-        if (m_isFrozen) {
-            m_velocity = {0.f, 0.f}; // Restore pre-attack motion
-            m_isFrozen = false;
-        }
-        m_dashAttack = false;
+        cancelAttack();
     }
 
     if (m_isAttacking) {
         // Stop attacking if changing facing direction
         if (m_currentFacingDirection != m_lastFacingDirection) {
-            m_isAttacking = false;
-            m_activeAttackClock.reset();
+            cancelAttack();
         }
     }
 
@@ -248,6 +240,16 @@ void Player::attack() {
             }
         }
     }
+}
+
+void Player::cancelAttack() {
+    m_isAttacking = false;
+    m_activeAttackClock.reset();
+    if (m_isFrozen) {
+        m_velocity = {0.f, 0.f};
+        m_isFrozen = false;
+    }
+    m_dashAttack = false;
 }
 
 void Player::animationLogic(const sf::Time dt) {
