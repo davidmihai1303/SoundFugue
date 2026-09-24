@@ -45,7 +45,7 @@ The following preparatory fixes have already been implemented by you and reviewe
 
 The attack-hitbox offset left by the old ground correction is resolved. Terrain resolution now runs before the existing positioning code in `Player::attackingLogic`, which reads the corrected body position, and `World::collision_player_ground` has been removed.
 
-Death/respawn is a separate case: it occurs during enemy interactions, after the player's normal update. Step 9 must cancel the attack and immediately change the selected animation. The existing early return prevents further enemy checks in that frame, but does not reset player state.
+Death/respawn is a separate case: it occurs during enemy interactions, after the player's normal update. Step 9 handled it: `Player::respawn()` cancels the attack, resets the player's state and selects the standing pose in the same frame, and the existing early return still prevents further enemy checks in that frame.
 
 ## Step 1 — Establish the starting behavior
 
@@ -176,11 +176,13 @@ The fixed patrol interval from the original mock-up is gone. An enemy now walks 
 - [x] Read current bounds for each interaction phase. After a respawn, discard bounds from the previous position. *Already true, no code change: `handleCollisions()` reads the player's bounds before enemy contact and again before note collection, attack hits read `getAttackingBounds()` directly, and the early return after respawn stops any enemy check from using the old position.*
 - [x] Centralize attack cancellation: clear `m_isAttacking`, stop the active attack timer, release airborne freeze and dash state, and reset attack-animation elapsed time and frame. Reset the attack sprite's texture rectangle too, so the next attack starts from its first frame. Keep the existing cooldown behavior for ordinary cancellation.
 - [x] Give death/respawn one consistent reset path that cancels the attack, clears velocity and transient movement, restores dash availability, resets the cooldown for the new life, and synchronizes placement and ground support. The attack rectangle may remain allocated; a false attacking flag must disable both its drawing and its hit checks.
-- [ ] Immediately select the standing animation at the respawn position and apply its first frame. Death occurs after `animationLogic` has already run, so clearing only the attacking flag can leave `m_animationToDraw` selecting the attack sprite for the rest of that frame. Do not wait for the next player update to correct the visible pose.
+- [x] Immediately select the standing animation at the respawn position and apply its first frame. Death occurs after `animationLogic` has already run, so clearing only the attacking flag can leave `m_animationToDraw` selecting the attack sprite for the rest of that frame. Do not wait for the next player update to correct the visible pose.
 - [x] Keep the early return from enemy collision handling after respawn. Any later checks, such as note collection, must use the respawned state and fresh body bounds. *Already true, no code change: `collision_player_enemies()` returns right after the respawn and note collection re-reads the bounds. The respawn reset path from the item above must keep that return.*
 - [x] Use consistent cancellation cleanup for existing jump and facing-change cancellations as well as normal attack completion. Ensure gravity is released, and preserve movement deliberately initiated by the transition, such as the new jump velocity.
 
 **Checkpoint:** Dying during a grounded attack, an airborne freeze, or a dash immediately disables the attack hitbox and shows the standing pose at respawn. Old motion and attack state do not carry over; camera and pickup checks use the new position immediately. Ground correction continues to preserve active attacks as specified in Step 7.
+
+**Status:** done. Every item is implemented or confirmed, and the checkpoint passed its play test on 24 September 2026.
 
 ## Step 10 — Read terrain objects through tmxlite
 

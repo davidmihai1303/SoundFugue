@@ -117,7 +117,7 @@ sf::Vector2f Player::movementLogic(const sf::Time dt, bool hasGroundSupport) {
     }
 
     // Jumping logic and gravity
-    // No jump while frozen: a frozen attack must finish first (KNOWN_ISSUES.md #7)
+    // No jump while frozen: a frozen attack must finish first
     if (m_onGround && !m_isFrozen && sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::Space)) {
         m_velocity.y = -Constants::Player::JumpStrength;
         m_onGround = false;
@@ -382,6 +382,12 @@ void Player::respawn(const sf::Vector2f& position) {
     }
     m_currentFacingDirection = true;
     m_lastFacingDirection = true;
+
+    // Death happens after animationLogic() has already picked this frame's sprite, so pick the standing pose here
+    m_animationToDraw = 0;
+    m_standing_currentFrame = 0;
+    m_standing_elapsedTime = 0.f;
+    m_standingSprite.setTextureRect(sf::IntRect({0, 0}, sf::Vector2<int>(m_standing_frameSize)));
 
     setPosition(position);
 }
