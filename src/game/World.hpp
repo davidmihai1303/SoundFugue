@@ -43,8 +43,8 @@ private:
 
     sf::RectangleShape m_ground;
 
-    // Temporary terrain: populated with the same rectangle as m_ground until
-    // Tiled-based loading replaces it (Step 10/11 of the collision guide).
+    // Temporary terrain: the floor that m_ground draws plus an undrawn 50x50 block, until
+    // Tiled-based loading replaces it (Steps 10-11 of the map loader guide).
     TerrainCollision m_terrain;
 
     std::vector<std::unique_ptr<Entity>> m_entities;

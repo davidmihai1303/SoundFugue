@@ -1,5 +1,7 @@
 # Terrain collision implementation guide
 
+**Status:** done. Every step is complete (24 September 2026).
+
 You write the game code. I explain each step, help you reason through it, and review what you write. Work through this guide one step at a time; finish the checkpoint before moving on. Creating this document does not carry out any of the implementation steps.
 
 ## What we are building
@@ -8,8 +10,7 @@ A reusable system that moves rectangular actor bodies through static, solid rect
 
 The decisions for this first version are:
 
-- Terrain comes from a Tiled object layer named `Collision`.
-- Every supported rectangle in that layer is solid on all four sides.
+- Terrain is a set of static rectangles, each solid on all four sides.
 - Aeris keeps the existing walking, jumping, sprinting, and attack tuning.
 - Terrain correction preserves the active attack and its animation progress. Position the attack hitbox from the corrected body position before checking hits.
 - A wall stops dash movement; the attack and airborne freeze finish normally.
@@ -25,7 +26,6 @@ The current variable frame time and its 0.05-second cap stay in place. We will u
 | Component | Responsibility |
 | --- | --- |
 | `TerrainCollision` — new | Store terrain rectangles and resolve a body's requested movement. |
-| `TerrainMapLoader` — new | Convert supported TMX collision objects into terrain rectangles. |
 | `World` | Own the terrain, supply it to actors, and coordinate gameplay interactions. |
 | `Player` and the concrete enemies (`Spider`, ...) | Decide intended movement and respond to terrain contacts. |
 | `Enemy` | Shared abstract base for the concrete enemies; owns the per-frame order they all run in. |
@@ -137,8 +137,8 @@ Keep David's idea as a possible later optimization: check the stored floor-impac
 
 **Edit:** `Entity`, `Player`, `Enemy`, and `World` declarations and definitions together.
 
-- [x] Let `World` own a `TerrainCollision` instance. Initially populate it with the existing floor: position (-500, 550), size 6000 by 50 pixels.
-- [x] Pass a read-only terrain reference through the entity update and movement interfaces. Update both derived classes and the `World` call site together; the spider starts using the resolver in Step 8.
+- [x] Let `World` own a `TerrainCollision` instance. Initially populate it with the existing floor: position (-500, 550), size 6000 by 50 pixels. *An undrawn 50x50 block at (-400, 500) was added when Step 7 was finished; both are placeholders until the map loader supplies the terrain.*
+- [x] Pass a read-only terrain reference through the entity update and movement interfaces. Update both derived classes and the `World` call site together; the spider starts using the resolver in Step 8. *`update()` carries the terrain reference; `movementLogic()` receives only the pre-move ground-support flag, computed by the caller, because that is the one terrain fact it needs.*
 - [x] In player movement, calculate input movement, jump/gravity velocity, sprint modifiers, and dash motion before asking the resolver to move the body.
 - [x] Include both `m_movement` and `m_velocity` when calculating displacement. Using velocity alone would omit ordinary keyboard movement.
 - [x] Replace direct shape movement with applying the resolver's corrected position exactly once.
@@ -174,8 +174,8 @@ The fixed patrol interval from the original mock-up is gone. An enemy now walks 
 - [x] Initialize ground support from the spawn position before the first movement update. *Covered without a code change: `Player::update` queries `hasGroundSupport()` on the current bounds before `movementLogic()`, so her first update already starts from the spawn's real support, and `Enemy` never reads `m_onGround`.*
 - [x] Keep player/enemy body contact, attack hits, and note collection as separate gameplay checks after actor movement has finished. *Already true, no code change: `World::update` runs every entity's `update()` first, then `handleCollisions()`, which runs all three as plain overlap checks outside the resolver.*
 - [x] Read current bounds for each interaction phase. After a respawn, discard bounds from the previous position. *Already true, no code change: `handleCollisions()` reads the player's bounds before enemy contact and again before note collection, attack hits read `getAttackingBounds()` directly, and the early return after respawn stops any enemy check from using the old position.*
-- [x] Centralize attack cancellation: clear `m_isAttacking`, stop the active attack timer, release airborne freeze and dash state, and reset attack-animation elapsed time and frame. Reset the attack sprite's texture rectangle too, so the next attack starts from its first frame. Keep the existing cooldown behavior for ordinary cancellation.
-- [x] Give death/respawn one consistent reset path that cancels the attack, clears velocity and transient movement, restores dash availability, resets the cooldown for the new life, and synchronizes placement and ground support. The attack rectangle may remain allocated; a false attacking flag must disable both its drawing and its hit checks.
+- [x] Centralize attack cancellation: clear `m_isAttacking`, stop the active attack timer, release airborne freeze and dash state, and reset attack-animation elapsed time and frame. Reset the attack sprite's texture rectangle too, so the next attack starts from its first frame. Keep the existing cooldown behavior for ordinary cancellation. *Implemented as `Player::cancelAttack()`. The animation reset lives in `attack()` instead, which restarts the animation and its texture rectangle whenever an attack starts, so `cancelAttack()` does not repeat it.*
+- [x] Give death/respawn one consistent reset path that cancels the attack, clears velocity and transient movement, restores dash availability, resets the cooldown for the new life, and synchronizes placement and ground support. The attack rectangle may remain allocated; a false attacking flag must disable both its drawing and its hit checks. *Implemented as `Player::respawn()`. Ground support comes from the next update's pre-move check, as in the spawn item above.*
 - [x] Immediately select the standing animation at the respawn position and apply its first frame. Death occurs after `animationLogic` has already run, so clearing only the attacking flag can leave `m_animationToDraw` selecting the attack sprite for the rest of that frame. Do not wait for the next player update to correct the visible pose.
 - [x] Keep the early return from enemy collision handling after respawn. Any later checks, such as note collection, must use the respawned state and fresh body bounds. *Already true, no code change: `collision_player_enemies()` returns right after the respawn and note collection re-reads the bounds. The respawn reset path from the item above must keep that return.*
 - [x] Use consistent cancellation cleanup for existing jump and facing-change cancellations as well as normal attack completion. Ensure gravity is released, and preserve movement deliberately initiated by the transition, such as the new jump velocity.
@@ -184,73 +184,6 @@ The fixed patrol interval from the original mock-up is gone. An enemy now walks 
 
 **Status:** done. Every item is implemented or confirmed, and the checkpoint passed its play test on 24 September 2026.
 
-## Step 10 — Read terrain objects through tmxlite
-
-**Create:** `src/terrain/TerrainMapLoader.hpp`, `src/terrain/TerrainMapLoader.cpp`, and `tests/TerrainMapLoaderTests.cpp`. **Update:** `CMakeLists.txt`.
-
-- [ ] Give the loader a parsed `tmx::Map` as input and a collection of SFML terrain rectangles as output. Keep parsing out of the collision resolver.
-- [ ] Find exactly one top-level object layer named `Collision`. Report a missing layer, duplicate layer, wrong layer type, or nested `Collision` layer clearly.
-- [ ] Accept only ordinary unrotated rectangles with positive dimensions and finite geometry. Reject points, polygons, ellipses, text, and tile objects even if they expose rectangular bounds.
-- [ ] Convert object bounds to world pixels and apply the layer offset once. The bundled tmxlite exposes offsets as integer pixels, so use whole-pixel layer offsets for this version.
-- [ ] Treat all supported rectangles in this layer as solid. Object names and classes are optional labels; hiding a layer or object in Tiled must not disable its collision.
-- [ ] Include the layer and object identifier in errors so an unsupported object can be found in Tiled.
-- [ ] Add a separate CTest executable for valid placement, offsets, hidden objects, invalid shapes, and invalid/missing layers. Use small maps loaded from strings; no rendering is needed.
-
-**Checkpoint:** Loader tests pass independently of the game. The running game still uses the temporary floor until the map is prepared in Step 11.
-
-## Step 11 — Replace the floor source and build a small collision course
-
-**Edit in Tiled:** `resources/maps/untitled.tmx`. **Edit in C++:** `World` and startup error reporting in `src/main.cpp`.
-
-- [ ] Add a top-level object layer named `Collision` with zero offset.
-- [ ] Start by adding only the floor rectangle from the table below. Keep the existing tile artwork.
-- [ ] After loading the map successfully, have `World` obtain rectangles from `TerrainMapLoader` and construct its terrain system from them.
-- [ ] Report map-loading or collision-data errors and stop startup clearly. Do not silently fall back to the old hardcoded floor.
-- [ ] Remove the hardcoded floor collider and drawing. Draw temporary outlines directly from the loaded terrain rectangles, using their actual world bounds.
-- [ ] Verify the floor behaves exactly as before, then add the other test objects one at a time.
-
-| Object label | X | Y | Width | Height | Purpose |
-| --- | ---: | ---: | ---: | ---: | --- |
-| Floor | -500 | 550 | 6000 | 50 | Preserve the current ground. |
-| Platform | 560 | 500 | 128 | 16 | A 50-pixel rise for landing and ledge checks. |
-| Ceiling | 250 | 390 | 128 | 16 | Stop an upward jump without grounding Aeris. |
-| Wall | 800 | 450 | 32 | 100 | Stop walking, sprinting, and dash movement. |
-
-These are temporary testing objects. They do not create visible tile artwork automatically; the outlines make their locations clear while testing.
-
-- [ ] Keep the current actor placements in code and verify their full bodies remain clear of terrain: Aeris starts at (0, 250), respawns at (100, 100), and the spider starts at (400, 500).
-- [ ] Add a loader test for the actual project map so future map edits cannot silently remove the collision layer or invalidate these placements.
-
-**Checkpoint:** Moving a rectangle in Tiled changes collision after restarting the game. Tile rendering remains in `MapLayer`; terrain behavior comes entirely from the object layer.
-
-## Step 12 — Verify the complete result
-
-Run the geometry and loader tests in both Debug and Release. Then run the game from CLion and check the following:
-
-| Scenario | Required result |
-| --- | --- |
-| Stand still or walk across adjoining floor rectangles | No sinking, jitter, or snagging. |
-| Terrain correction during an attack, facing either direction | The attack hitbox follows the corrected body position; attack timing and animation progress continue normally. |
-| Jump while touching the floor | Upward movement begins freely. |
-| Hit the underside of a platform | Upward velocity stops; jumping and dash are not restored. |
-| Walk or sprint into either wall face | The body stops outside the wall. |
-| Dash into a wall | Horizontal movement stops; the attack finishes and gravity subsequently resumes. |
-| Walk off a platform | Ground support clears and falling begins. |
-| High displacement across a thin obstacle | The swept path catches the obstacle. |
-| Diagonal corner or multiple simultaneous contacts | Stable result, unchanged when collider storage order is reversed. |
-| Frozen airborne attack with zero displacement | Aeris is grounded only if there is actual support below the feet. |
-| Enemy contact and respawn | Body, sprites, camera, and later interaction checks use the respawn position; no remaining enemy checks use the previous position. |
-| Die during a grounded attack | The hitbox becomes inactive and the standing pose appears at respawn in the same frame. |
-| Die during an airborne freeze or dash | The attack ends immediately; old momentum and freeze state are cleared, and normal gravity resumes. |
-| Start a new attack after respawn | The animation starts at its first frame and no previous attack state carries over. |
-| Invalid collision object or overlapping spawn | A useful error identifies the placement or map problem. |
-
-For spider checks, use temporary test placements: put a wall in its path, then place it on a platform with an open edge. Keep its starting body clear of terrain. Confirm that it reverses at the wall, that its sprite flips with it, and that it falls from the platform, then restore the normal test-map placement.
-
-Check movement at different frame rates and with the existing maximum frame duration. Do not compensate for collision defects by changing jump strength, speed, or gravity.
-
-**Finished when:** Both actors consistently obey the same Tiled terrain, the automated checks pass, the manual scenarios behave as described, and the old floor-specific collision path is gone.
-
 ## How we proceed together
 
-Keep the preparatory fixes recorded above and continue through the remaining checkpoints. For each step, we discuss the idea, you implement that step, and I review the result and help with any failed checks. We move to the next step after its checkpoint passes. Step 6 is a review of the completed fixes during integration; it does not require an interim attack-positioning helper.
+Every step in this guide is complete. Each one was discussed first, then implemented and reviewed, and the next step started only after its checkpoint passed. Step 6 was a review of the completed fixes during integration; it did not require an interim attack-positioning helper.

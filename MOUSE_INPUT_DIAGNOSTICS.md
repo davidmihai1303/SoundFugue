@@ -108,7 +108,7 @@ After more than a second without attacking, normal updates should have reset bot
 
 Trace what happens after the acceptance message:
 
-- Record when `m_isAttacking` changes back to false, with the reason: attack duration elapsed, jump, or facing-direction change.
+- Record when `m_isAttacking` changes back to false, with the reason: attack duration elapsed, jump, facing-direction change, or death. All four go through `Player::cancelAttack()`, so one log line there, plus which caller reached it, covers them.
 - Verify that `Player::animationLogic` selects `m_animationToDraw = 2` while attacking.
 - Verify that `Player::draw` reaches its attack-sprite branch.
 - Record attack frame-index changes, `m_attacking_elapsedTime`, and the sprite texture rectangle. Avoid a print on every draw.

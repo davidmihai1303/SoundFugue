@@ -8,7 +8,7 @@ Read this before doing anything in this repo. It has two jobs: set the rules for
 
 This is David's project, built partly as his own learning exercise in C++ and game architecture. The agent's job is to implement exactly what's asked, explain reasoning clearly, and otherwise stay out of the driver's seat.
 
-1. **David decides scope and sequencing, not the agent.** Never jump ahead in `COLLISION_IMPLEMENTATION_GUIDE.md` (or any other roadmap) just because the next step is obvious. This project has a documented history of exactly this mistake — see `COLLISION_ENGINE_DEVELOPMENT_DRAFT.md`, mistake 22.15 ("Implementing later checklist work before it was requested"). If it wasn't explicitly requested, don't build it, even as a "small bonus while I'm in there."
+1. **David decides scope and sequencing, not the agent.** Never jump ahead in `MAP_LOADER_IMPLEMENTATION_GUIDE.md` (or any other roadmap) just because the next step is obvious. This project has a documented history of exactly this mistake — see `COLLISION_ENGINE_DEVELOPMENT_DRAFT.md`, mistake 22.15 ("Implementing later checklist work before it was requested"). If it wasn't explicitly requested, don't build it, even as a "small bonus while I'm in there."
 2. **Work in small, reviewable increments.** One requested change, one diff, reviewed before moving on. Don't bundle unrelated concerns into a single edit. If a "small" fix turns out to require touching several files or restructuring an interface, say so and confirm scope before proceeding rather than silently expanding the change.
 3. **Don't add things that weren't asked for**: no extra tests, no defensive code for cases that can't happen, no refactors "while I'm here," no speculative support for explicitly deferred scope (slopes, one-way platforms, moving platforms, actor pushing, rotated shapes — see the collision draft's "Scope chosen" section). Deferred means deferred until asked for.
 4. **Ask when a decision is genuinely David's to make**, rather than guessing — e.g. which class owns a piece of logic, what a public interface should look like, how to interpret an ambiguous instruction. Guessing wrong on an architectural call is more expensive to undo than asking.
@@ -23,7 +23,7 @@ This is David's project, built partly as his own learning exercise in C++ and ga
 
 **SoundFugue** is a 2D platformer built in C++ with SFML 3, aiming for tight, fast, fluid movement in the spirit of *Rayman Origins*. The world is built from music: Lord Tacet has silenced it, and the player character, Aeris, travels through silenced "Genre Worlds" (Rock, Disco, etc.) restoring their sound by defeating bosses and reclaiming each world's "Essence." Full pitch and feature list: `README.md`.
 
-Current stated status (per README): Aeris' core physics/movement are considered finished; active focus has shifted to building out the world. In practice, the terrain-collision rewrite (below) is the most recently active area of work.
+Current stated status (per README): Aeris' core physics/movement are considered finished; active focus has shifted to building out the world. The terrain-collision engine is complete; the Tiled map loader is the next area of work.
 
 ---
 
@@ -42,7 +42,7 @@ src/game/
                           interactions (enemy contact, note pickup). m_terrain is still built
                           by hand in the constructor and holds TWO solids: the floor at
                           (-500, 550) sized 6000x50, which m_ground draws, and a 50x50 block
-                          at (-400, 500) that nothing draws. Tiled supplies terrain at Step 11.
+                          at (-400, 500) that nothing draws. Tiled supplies terrain at Step 11 of the map loader guide.
                           At the end of its constructor it checks every entity's spawn and
                           the respawn point (Constants::Player::RespawnPosition) with
                           TerrainCollision::validatePlacement(). On enemy contact it calls
@@ -97,7 +97,7 @@ src/terrain/               A fully-tested swept-AABB collision resolver with no 
   TerrainCollision.*        Tiled, textures, input or any actor class. Both Player and Enemy now
   TerrainContacts.hpp       drive it through Entity::resolveTerrainMovement(). Its rectangles are
   TerrainMove.hpp           still supplied by hand in World's constructor — TerrainMapLoader does
-                            not exist yet (Step 10). validatePlacement() is the public
+                            not exist yet (map loader guide, Step 10). validatePlacement() is the public
                             starting-overlap check that resolveMovement() runs first and World
                             uses for spawns. See Section 5.
 
@@ -147,33 +147,34 @@ The game loads resources via relative paths (`"../resources/..."`), so run the `
 
 ---
 
-## 4. The three root-level docs — what each one is for
+## 4. The four root-level docs — what each one is for
 
 | File | Role | Tense / content rule |
 | --- | --- | --- |
 | `COLLISION_ENGINE_DEVELOPMENT_DRAFT.md` | Narrative history of the terrain resolver and its integration: how it works, why each piece exists, mistakes made and fixed. | Past/present tense only — describes exclusively what is already implemented and tested. Deliberately excludes future/planned work; update it once a step is actually finished, never before. |
-| `COLLISION_IMPLEMENTATION_GUIDE.md` | The authoritative forward checklist for connecting the resolver to the game (Steps 1–12, checkbox per sub-item). | This is "what's next" — follow it one step at a time, in order, and don't tick boxes that haven't actually been done. |
+| `COLLISION_IMPLEMENTATION_GUIDE.md` | The checklist that built the resolver and connected it to the game, Steps 1–9. Done. | A finished record; don't reopen it. |
+| `MAP_LOADER_IMPLEMENTATION_GUIDE.md` | The authoritative forward checklist for loading terrain from Tiled and verifying the whole result (Steps 10–12; numbering continues from the collision guide). | This is "what's next" — follow it one step at a time, in order, and don't tick boxes that haven't actually been done. |
 | `MOUSE_INPUT_DIAGNOSTICS.md` | An open, unresolved investigation into intermittent mouse-click/attack failures. | Diagnostic protocol only — no fix has been applied yet and no root cause is confirmed. Follow its procedure to gather evidence rather than guessing at a fix. |
 
-`COLLISION_ENGINE_DEVELOPMENT_DRAFT.md` is untracked: it's listed in `.git/info/exclude`, so it never appears as an untracked file in `git status` either. `COLLISION_IMPLEMENTATION_GUIDE.md` is committed (`cac7405`), so its checkbox state is part of the history and shows up in diffs. Don't commit anything without being asked (Rule 5).
+`COLLISION_ENGINE_DEVELOPMENT_DRAFT.md` is untracked: it's listed in `.git/info/exclude`, so it never appears as an untracked file in `git status` either. Both guides are tracked in git, so their checkbox state is part of the history and shows up in diffs. Don't commit anything without being asked (Rule 5).
 
 ---
 
 ## 5. Current implementation status (verify before trusting — see Rule 6)
 
-As of Step 9's completion (24 September 2026; last commit `3017aca formatting`, with 9.7 not yet committed), with the docs brought up to date:
+As of 24 September 2026 (collision engine finished in `98d1433`, guides split afterwards), with the docs brought up to date:
 
-- **Steps 1-9 of `COLLISION_IMPLEMENTATION_GUIDE.md` are complete; Step 10 is next.** Step 9: 9.1 (`9444829`, `validatePlacement()` plus the startup spawn checks), 9.5 and 9.9 (`37b6907`, `cancelAttack()` used at every attack end), 9.6 (`4fdeef1`, `Player::respawn()`) and 9.7 (the standing pose set inside `respawn()`). 9.2, 9.3, 9.4 and 9.8 needed no code; each is ticked with a note in the guide saying why. Step 9's checkpoint passed its play test on 24 September 2026. Steps 10 and 11 are untouched.
-- **The guide's file paths follow the `src/<area>/` layout.** Step 10 now says to create `src/terrain/TerrainMapLoader.*`. Which CMake target the loader joins is still undecided: `TerrainCollisionLib` currently links only SFML and is documented as Tiled-free.
+- **The collision engine is done: every step of `COLLISION_IMPLEMENTATION_GUIDE.md` is complete.** Work continues in `MAP_LOADER_IMPLEMENTATION_GUIDE.md`, whose steps are numbered from 10; Step 10 is next. Step 9: 9.1 (`9444829`, `validatePlacement()` plus the startup spawn checks), 9.5 and 9.9 (`37b6907`, `cancelAttack()` used at every attack end), 9.6 (`4fdeef1`, `Player::respawn()`) and 9.7 (`98d1433`, the standing pose set inside `respawn()`). 9.2, 9.3, 9.4 and 9.8 needed no code; each is ticked with a note in the guide saying why. Step 9's checkpoint passed its play test on 24 September 2026. Steps 10 and 11 are untouched.
+- **The map loader's place is decided.** It lives in `src/terrain/TerrainMapLoader.*` and gets its own static library, `TerrainMapLoaderLib` (linking tmxlite and SFML), used by the game and `TerrainMapLoaderTests`, so `TerrainCollisionLib` stays Tiled-free. Step 12's collision scenarios are verified after the loader, because they need the Tiled terrain.
 - **Terrain resolver (`src/terrain/`)**: `TerrainCollision::resolveMovement()` does swept AABB collision with repeated sweeping for sliding (capped at 4 iterations), merges simultaneous multi-solid impacts independent of storage order, separates face vs. corner contacts to avoid false hits at terrain seams, uses a documented floating-point tolerance, and `hasGroundSupport()` answers final ground support as an independent query. `tests/TerrainCollisionTests.cpp` covers it in 13 headless scenario groups.
-- **Both actors run on the resolver.** `World` owns the `TerrainCollision` and passes it into every `Entity::update`. Aeris was wired in at Step 7, enemies at Step 8, both through `Entity::resolveTerrainMovement()` — the single place a resolved position is applied to a shape. No actor writes its own body position outside its constructor and the respawn teleport. There is exactly one terrain correction path; if a second one ever appears, that's the bug.
+- **Both actors run on the resolver.** `World` owns the `TerrainCollision` and passes it into every `Entity::update`. Aeris was wired in at Step 7, enemies at Step 8, both through `Entity::resolveTerrainMovement()` — the single place a resolved position is applied to a shape. No actor writes its own body position outside its constructor and `Player::respawn()`. There is exactly one terrain correction path; if a second one ever appears, that's the bug.
 - **`Enemy` is now a shared base with `Spider` as its one concrete enemy** (`a92bdaa`), a restructure made outside the guide's numbered steps so that Step 8's sequencing is written once in `Enemy::update` rather than repeated in each of the 5-8 planned enemies.
 - **Step 8's design changed mid-step.** The original mock-up patrol interval is gone. An enemy walks in its facing direction until terrain stops it, and the horizontal contact itself is what reverses it, through `Enemy`'s `contactLogic()` hook. The guide's Step 8 was rewritten to match, so its old boxes about clamping to a patrol interval no longer exist.
-- **Step 8 was play-tested on 22 September 2026 and passed its checkpoint**: resting on the floor without jitter, the turn reading correctly, falling when it leaves a ledge. In the current world the terrain that turns the spider is the undrawn 50x50 block. Step 12's deliberate spider tests — a wall placed in its path and a platform with an open edge — remain part of final verification.
+- **Step 8 was play-tested on 22 September 2026 and passed its checkpoint**: resting on the floor without jitter, the turn reading correctly, falling when it leaves a ledge. In the current world the terrain that turns the spider is the undrawn 50x50 block. Step 12's deliberate spider tests (now in the map loader guide) — a wall placed in its path and a platform with an open edge — remain part of final verification.
 - **Attack-input changes (`79679e2`, 23 September 2026), made outside the guide's numbered steps.** `Constants::Player::AttackCooldown` is 0.36 s (was 0.5). `Player::attack()` accepts a click whenever the cooldown is ready and no dash is in progress (`!m_dashAttack`), and every accepted click fully restarts the attack: its timer, its animation time and frame, and the attack sprite's texture rectangle. The jump in `Player::movementLogic` also requires `!m_isFrozen`, so a jump can no longer cancel a frozen attack. Committed in `79679e2` together with the tracked doc edits of 22-23 September, and play-tested on 23 September 2026: everything behaved as intended.
 - **Formatting**: `.clang-format`'s column limit is 200 (raised from 120 in `4fdeef1`). All 24 tracked files under `src/` and `tests/TerrainCollisionTests.cpp` were reformatted to it on 24 September 2026, a whitespace-only change, and all pass `clang-format --dry-run --Werror`.
-- **Steps 10-12** (`TerrainMapLoader`, the Tiled `Collision` object layer replacing the hardcoded floor, final verification) — **not started.**
+- **Steps 10-12 of `MAP_LOADER_IMPLEMENTATION_GUIDE.md`** (`TerrainMapLoader`, the Tiled `Collision` object layer replacing the hardcoded floor, final verification) — **not started.**
 - **`COLLISION_ENGINE_DEVELOPMENT_DRAFT.md` covers Steps 1-9.** Sections 1-15 are the starting point and the resolver (Steps 1-5), 16-19 the integration (Steps 6-9), and 20-26 the reference sections (algorithm, invariants, mistakes, testing, glossary, source map, working method). Sections 16-19 were written from the code and git history and have no "What was challenging" subsections; those are David's to write.
 - **Known open bugs**: none. `KNOWN_ISSUES.md` was deleted on 24 September 2026 once every entry was closed: #1-#4 by Step 9, #5 by Step 8, #7 by refusing the jump while frozen, and #6 (a dash attack needs the direction key held without a break) confirmed as intended. Separately, intermittent mouse-click/attack failures remain unexplained; `MOUSE_INPUT_DIAGNOSTICS.md` has the diagnostic protocol, and no fix has been attempted.
 
-Confirm the above against `git log --oneline` and the checkbox state in `COLLISION_IMPLEMENTATION_GUIDE.md` before acting on it — this section will drift out of date as work continues.
+Confirm the above against `git log --oneline` and the checkbox state in the two guides before acting on it — this section will drift out of date as work continues.

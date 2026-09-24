@@ -1,6 +1,6 @@
 // NOTE: World::m_player is a non-owning raw pointer into m_entities. It stays valid while nothing
 // erases entities (vector reallocation moves the unique_ptrs, not the objects they point to), but it
-// dangles the moment entity removal is added. Watch this when Step 9 introduces death handling.
+// dangles the moment entity removal is added. Death respawns the player rather than removing her, so watch this if entities are ever removed.
 
 // NOTE: TerrainCollision::resolveMovement caps its sweep at 4 iterations and discards any leftover
 // displacement rather than applying it unchecked, which is the required behaviour. No test in
