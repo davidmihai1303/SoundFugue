@@ -2,6 +2,7 @@
 // Created by david on 11/1/2025.
 //
 #include <algorithm>
+#include <string>
 #include "game/World.hpp"
 #include "entities/enemies/Spider.hpp"
 
@@ -45,6 +46,14 @@ World::World(sf::RenderWindow& window)
 
     // Code=2
     addNotes();
+
+    // Every body and the respawn point must start outside the terrain; touching it is valid.
+    unsigned int enemyNumber = 0;
+    for (const auto& e : m_entities) {
+        const std::string label = e.get() == m_player ? "player spawn" : "enemy " + std::to_string(++enemyNumber) + " spawn";
+        m_terrain.validatePlacement((*e).getBounds(), label);
+    }
+    m_terrain.validatePlacement({Constants::Player::RespawnPosition, (*m_player).getBounds().size}, "player respawn");
 }
 
 void World::update(const sf::Time dt, const InputState& inputState) {
@@ -83,7 +92,7 @@ void World::collision_player_enemies(const sf::FloatRect& playerBounds) {
         const sf::FloatRect enemyBounds = (*e).getBounds();
         if (playerBounds.findIntersection(enemyBounds)) {
             // simple reaction: reset player position
-            (*m_player).setPosition({100.f, 100.f});
+            (*m_player).setPosition(Constants::Player::RespawnPosition);
             (*m_player).setVelocity({(*m_player).getVelocity().x, 0.f});
             return;
         }

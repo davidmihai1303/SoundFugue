@@ -65,27 +65,27 @@ TerrainCollision::TerrainCollision(std::vector<sf::FloatRect> solids) : m_solids
     }
 }
 
-TerrainCollision::~TerrainCollision() = default;
+void TerrainCollision::validatePlacement(const sf::FloatRect& body, const std::string& label) const {
+    validateRectangle(body, label);
+    for (std::size_t index = 0; index < m_solids.size(); ++index) {
+        // Edge contact has no intersection area and is a valid position.
+        if (body.findIntersection(m_solids[index])) {
+            throw std::invalid_argument(label + "'s starting position is overlapping terrain solid " + std::to_string(index));
+        }
+    }
+}
 
 TerrainMove TerrainCollision::resolveMovement(sf::FloatRect startBounds, const sf::Vector2f displacement) const {
     constexpr float collisionTimeTolerance = Constants::Physics::collisionTimeTolerance;
 
     // Reject invalid geometry before doing any collision calculations.
-    validateRectangle(startBounds, "body");
+    // A valid movement must begin outside every terrain solid.
+    validatePlacement(startBounds, "body");
     if (!std::isfinite(displacement.x)) {
         throw std::invalid_argument("displacement: x must be finite");
     }
     if (!std::isfinite(displacement.y)) {
         throw std::invalid_argument("displacement: y must be finite");
-    }
-
-    // A valid movement must begin outside every terrain solid.
-    for (std::size_t index = 0; index < m_solids.size(); ++index) {
-        // Edge contact has no intersection area and is a valid starting position.
-        if (startBounds.findIntersection(m_solids[index])) {
-            throw std::invalid_argument("body's starting position is overlapping terrain solid " +
-                                        std::to_string(index));
-        }
     }
 
     sf::Vector2f remainingDisplacement = displacement;
@@ -238,3 +238,5 @@ bool TerrainCollision::hasGroundSupport(const sf::FloatRect& bodyBounds) const {
 const std::vector<sf::FloatRect>& TerrainCollision::getSolids() const {
     return m_solids;
 }
+
+TerrainCollision::~TerrainCollision() = default;

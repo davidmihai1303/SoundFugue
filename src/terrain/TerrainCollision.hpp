@@ -3,6 +3,7 @@
 
 #include <SFML/Graphics/Rect.hpp>
 #include <optional>
+#include <string>
 #include <vector>
 
 #include "terrain/TerrainMove.hpp"
@@ -13,6 +14,10 @@ public:
     // Takes ownership of the supplied terrain rectangles and validates them.
     explicit TerrainCollision(std::vector<sf::FloatRect> solids);
     ~TerrainCollision();
+
+    // Throws std::invalid_argument if the body's bounds are invalid or it overlaps a solid. Touching a solid is valid.
+    // The label names the body in the error message.
+    void validatePlacement(const sf::FloatRect& body, const std::string& label) const;
 
     // Starts with the supplied body bounds and returns its resulting bounds and terrain contacts.
     [[nodiscard]] TerrainMove resolveMovement(sf::FloatRect startBounds, sf::Vector2f displacement) const;

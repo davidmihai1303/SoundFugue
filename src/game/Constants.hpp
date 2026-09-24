@@ -6,6 +6,7 @@
 #define SOUNDFUGUE_CONSTANTS_HPP
 
 #include <SFML/Graphics/Color.hpp>
+#include <SFML/System/Vector2.hpp>
 
 namespace Constants {
 inline constexpr unsigned int FrameRateLimit = 540;
@@ -25,6 +26,9 @@ inline constexpr float groundSupportTolerance = 0.001f;
 namespace Player {
 inline constexpr float MoveSpeed = 350.f;
 inline constexpr float JumpStrength = 550.f;
+
+// Placement
+inline constexpr sf::Vector2f RespawnPosition{100.f, 100.f};
 
 // Dash / Sprint
 inline constexpr float DashSpeed = 300.f; //TODO experiment with other values
